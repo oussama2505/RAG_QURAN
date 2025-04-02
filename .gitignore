@@ -1,0 +1,21 @@
+.DS_Store
+node_modules/  
+dist/  
+build/  
+venv/        # Entornos virtuales de Python  
+quran_env/
+.env  
+*.log  
+config.json  
+*.exe  
+*.out  
+*.o  
+.vscode/  
+.idea/  
+*.swp      # Archivos temporales de Vim  
+.cursor/           # Configuración y caché de Cursor
+*.cursor-history   # Historial de edición en Cursor
+copilot.json
+requirements.txt
+__pycache__/
+vector_db/
