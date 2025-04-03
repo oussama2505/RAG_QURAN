@@ -129,8 +129,7 @@ def create_enhanced_retriever(vector_store, k=5, use_compression=True):
             llm = ChatOpenAI(
                 model_name="gpt-3.5-turbo", 
                 temperature=0,
-                openai_api_key=openai_api_key,
-                api_kwargs={"timeout": 30}  # Add timeout instead of proxies
+                openai_api_key=openai_api_key
             )
             compressor = LLMChainExtractor.from_llm(llm)
             print("Successfully created LLM compressor with ChatOpenAI")

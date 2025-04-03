@@ -130,7 +130,6 @@ def create_answer_generator(model_name="gpt-3.5-turbo", temperature=0):
             model_name=model_name,
             temperature=temperature,
             openai_api_key=openai_api_key,
-            api_kwargs={"timeout": 30}  # Add timeout instead of proxies
         )
         print(f"Successfully initialized ChatOpenAI with model {model_name}")
     except Exception as e1:
