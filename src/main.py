@@ -14,10 +14,11 @@ def initialize_data_and_models(rebuild_vector_db=False, sample_size=None):
         sample_size (int, optional): If set, only use a sample of documents for testing
     """
     # Create directories if they don't exist
-    os.makedirs(os.path.dirname(config.VECTOR_DB_PATH), exist_ok=True)
+    os.makedirs(config.VECTOR_DB_PATH, exist_ok=True)
     
     # Check if vector database exists and whether to rebuild
-    vector_db_exists = os.path.exists(config.VECTOR_DB_PATH) and os.path.isdir(config.VECTOR_DB_PATH)
+    index_path = os.path.join(config.VECTOR_DB_PATH, "faiss_index")
+    vector_db_exists = os.path.exists(index_path) and os.path.isdir(index_path)
     
     try:
         if not vector_db_exists or rebuild_vector_db:
@@ -99,20 +100,30 @@ def quran_rag_query(question, surah_filter=None, verse_filter=None):
     """
     Query the Quran RAG system
     """
-    # Initialize components
-    retriever, generator = initialize_data_and_models()
-    
-    # Prepare filters
-    filters = {}
-    if surah_filter:
-        filters["surah_num"] = surah_filter
-    if verse_filter:
-        filters["verse_num"] = verse_filter
-    
-    # Process query
-    answer = process_query(retriever, generator, question, filters)
-    
-    return answer
+    try:
+        # Initialize components
+        retriever, generator = initialize_data_and_models()
+        
+        # Prepare filters
+        filters = {}
+        if surah_filter:
+            filters["surah_num"] = surah_filter
+        if verse_filter:
+            filters["verse_num"] = verse_filter
+        
+        # Process query
+        answer = process_query(retriever, generator, question, filters)
+        
+        # If answer is empty or just says no info found, try without filters
+        if ("couldn't find any relevant information" in answer.lower() or not answer.strip()) and (surah_filter or verse_filter):
+            print("No results with filters, trying without filters...")
+            answer = process_query(retriever, generator, question, None)
+        
+        return answer
+    except Exception as e:
+        error_msg = f"Error in quran_rag_query: {str(e)}"
+        print(error_msg)
+        return "I encountered an error processing your query. Please check the system logs or try again later."
 
 if __name__ == "__main__":
     # Example usage

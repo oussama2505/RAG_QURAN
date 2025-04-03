@@ -16,6 +16,5 @@ config.json
 .cursor/           # Configuración y caché de Cursor
 *.cursor-history   # Historial de edición en Cursor
 copilot.json
-requirements.txt
 __pycache__/
 vector_db/
