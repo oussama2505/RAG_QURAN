@@ -146,27 +146,21 @@ def get_chat_model(
         An instance of BaseChatModel
     """
     try:
-        # First attempt to initialize our unified client
+        # Initialize our unified client
         return UnifiedLLMChat(
             model_name=model_name,
             temperature=temperature,
             max_tokens=max_tokens
         )
     except Exception as e:
-        print(f"Error creating UnifiedLLMChat: {e}")
+        # If UnifiedLLMChat fails, raise the error directly
+        print(f"❌ CRITICAL ERROR creating UnifiedLLMChat: {e}")
+        # Optionally, return a dummy model or re-raise
+        # Re-raising might be better to halt startup if LLM is crucial
+        # raise e # Uncomment this to halt on error
         
-        # Try standard LangChain as fallback
-        try:
-            from langchain_openai import ChatOpenAI
-            print("Falling back to standard LangChain ChatOpenAI")
-            return ChatOpenAI(
-                model_name=model_name,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-        except Exception as e2:
-            print(f"Error with ChatOpenAI fallback: {e2}")
-            
-            # Return dummy chat model that returns error message
-            from langchain.llms.fake import FakeListLLM
-            return FakeListLLM(responses=["Sorry, I was unable to connect to the language model. Please check your API key and network connection."])
+        # Return dummy chat model that returns error message
+        from langchain.llms.fake import FakeListLLM
+        error_message = f"Sorry, failed to initialize the language model ({type(e).__name__}). Please check configuration and API keys."
+        print(f"Returning FakeListLLM due to error: {error_message}")
+        return FakeListLLM(responses=[error_message])

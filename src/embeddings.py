@@ -3,7 +3,7 @@ import os
 import pickle
 from typing import List, Dict, Any
 import openai
-from langchain_openai import OpenAIEmbeddings
+# from langchain_openai import OpenAIEmbeddings  # Comment out as we're not using this directly
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
@@ -11,6 +11,15 @@ from langchain_core.embeddings import Embeddings
 import numpy as np
 
 load_dotenv()  # Load API keys from .env file
+
+# Configure OpenAI globally to avoid proxies parameter issue
+api_key = os.getenv("OPENAI_API_KEY")
+if api_key:
+    # Set the API key globally
+    openai.api_key = api_key
+    # Remove incorrect client initialization
+    # Ensure no proxies are used by setting them to None explicitly
+    openai.proxy = None
 
 # Global model cache to avoid reloading models
 _GLOBAL_MODEL_CACHE = {}
@@ -21,9 +30,12 @@ class CustomOpenAIEmbeddings(Embeddings):
     
     def __init__(self, model="text-embedding-3-small"):
         self.model = model
-        # Create client with explicit settings to avoid inheriting problematic environment variables
+        # Ensure the API key is set globally
         api_key = os.getenv("OPENAI_API_KEY")
-        self.client = openai.OpenAI(api_key=api_key)
+        if not api_key:
+            raise ValueError("OpenAI API key not found in environment variables")
+        openai.api_key = api_key
+        # No need to create a client object, use openai methods directly
     
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """Embed a list of documents using the OpenAI API"""
@@ -31,13 +43,13 @@ class CustomOpenAIEmbeddings(Embeddings):
         results = []
         for i in range(0, len(texts), 100):  # Process in batches of 100
             batch = texts[i:i+100]
-            response = self.client.embeddings.create(model=self.model, input=batch)
+            response = openai.Embedding.create(model=self.model, input=batch)
             results.extend([data.embedding for data in response.data])
         return results
     
     def embed_query(self, text: str) -> List[float]:
         """Embed a query using the OpenAI API"""
-        response = self.client.embeddings.create(model=self.model, input=[text])
+        response = openai.Embedding.create(model=self.model, input=[text])
         return response.data[0].embedding
 
 # Custom HuggingFace embeddings class to handle import issues

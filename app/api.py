@@ -17,6 +17,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.config import VECTOR_DB_PATH
 from src.embeddings import get_embedding_model
 from src.api_key_manager import load_api_key, ensure_api_key
+from src.generator import generate_answer, create_answer_generator
 
 # Direct OpenAI function for fallback mode
 def generate_direct_answer(question, api_key):
@@ -94,10 +95,10 @@ Cite specific Surah and verse numbers when possible (e.g., "Quran 2:255").
         return f"Error: Failed to communicate with OpenAI API. Details: {str(e)}"
 
 # Enable debug mode for easier troubleshooting
-DEBUG_MODE = True
+DEBUG_MODE = False
 
 # Enable fallback mode to work without embeddings
-FALLBACK_MODE = True
+FALLBACK_MODE = False
 
 # Initialize the FastAPI app
 app = FastAPI(
@@ -130,14 +131,19 @@ async def startup_event():
             print("Some functionality may not work without an API key")
         
         try:
-            # Initialize embeddings
+            # Initialize embeddings based on environment variable
             print("Initializing embeddings...")
-            embeddings = get_embedding_model(model_type="huggingface")
+            # Read from environment, default to 'openai' if not set or empty
+            embedding_type = os.getenv('EMBEDDING_MODEL_TYPE', 'openai') 
+            if not embedding_type: # Handle empty string case
+                embedding_type = 'openai'
+            print(f"Using embedding model type: {embedding_type}") # Log the type being used
+            embeddings = get_embedding_model(model_type=embedding_type) # Use the retrieved type
             if embeddings is not None:
                 print("✅ Successfully initialized embeddings")
             else:
-                print("❌ Embedding model initialization failed - returned None")
-                raise ValueError("Embedding model returned None")
+                print(f"❌ Embedding model initialization failed for type '{embedding_type}' - returned None")
+                raise ValueError(f"Embedding model returned None for type '{embedding_type}'")
         except Exception as emb_error:
             print(f"❌ ERROR initializing embeddings: {str(emb_error)}")
             raise
@@ -446,9 +452,23 @@ async def ask_question(request: QuestionRequest):
     """
     Get an answer to a question about the Quran
     """
+    overall_start_time = time.time() # Start timing the whole request
     if DEBUG_MODE:
         print(f"\n----- Processing question: '{request.question}' -----")
-    
+
+    # Ensure RAG system is ready before proceeding (unless in fallback)
+    if not rag_system_ready and not FALLBACK_MODE:
+         # Check if initialization failed during startup
+        if initialization_error:
+             error_detail = f"RAG system initialization failed: {initialization_error}. Cannot process RAG queries."
+             if DEBUG_MODE: print(f"ERROR: {error_detail}")
+             raise HTTPException(status_code=503, detail=error_detail)
+        else:
+            # This case might occur if startup hasn't finished, but it's unlikely
+             error_detail = "RAG system is not ready yet. Please try again shortly."
+             if DEBUG_MODE: print(f"WARNING: {error_detail}")
+             raise HTTPException(status_code=503, detail=error_detail)
+
     try:
         # Create filters dictionary
         filters = {}
@@ -456,183 +476,118 @@ async def ask_question(request: QuestionRequest):
             filters["surah"] = request.surah_filter
         if request.verse_filter:
             filters["verse"] = request.verse_filter
-        
+
         if DEBUG_MODE:
             print(f"Retrieving documents with filters: {filters}")
-        
-        # If we're in pure fallback mode without documents, we can skip retrieval
-        if FALLBACK_MODE and docstore_data is None and not rag_system_ready:
-            print("Using direct OpenAI mode without document retrieval")
-            # Verify API key before attempting to call OpenAI
-            api_key = load_api_key()
-            if not api_key:
-                if DEBUG_MODE:
-                    print("ERROR: OpenAI API key not found")
-                return AnswerResponse(
-                    answer="Error: OpenAI API key not found. Please set your API key in the .env file.",
-                    sources=[],
-                    filters_applied=filters
-                )
-                
-            # Basic Quran knowledge prompt without specific context
-            context = "The Quran is the central religious text of Islam. Muslims believe it was revealed to the Prophet Muhammad by the angel Gabriel over a period of approximately 23 years, beginning in 610 CE."
-            try:
-                # Use direct OpenAI implementation that worked before
-                answer = generate_direct_answer(request.question, api_key)
-                if answer:
-                    return AnswerResponse(
-                        answer=answer,
-                        sources=[],  # No specific sources in direct mode
-                        filters_applied=filters
-                    )
-            except Exception as e:
-                print(f"Error in direct OpenAI implementation: {e}")
-                # Continue to regular flow if direct implementation fails
-        
-        # Get relevant documents using the retriever from src
+
+        # --- Time the retrieval step ---
+        retrieval_start_time = time.time()
         try:
             results = retrieve_documents(request.question, filters)
-        except Exception as retrieval_error:
+            retrieval_duration = time.time() - retrieval_start_time
             if DEBUG_MODE:
-                print(f"Document retrieval failed: {str(retrieval_error)}")
-                # In debug mode, continue with empty results
-                results = []
-            else:
-                raise retrieval_error
-        
+                print(f"⏱️ Document retrieval took {retrieval_duration:.2f} seconds.")
+        except HTTPException as http_exc:
+             # Propagate HTTP exceptions (like 503 if RAG not ready and not in FALLBACK_MODE)
+             raise http_exc
+        except Exception as retrieval_error:
+            retrieval_duration = time.time() - retrieval_start_time
+            error_detail = f"Error retrieving documents: {str(retrieval_error)} (took {retrieval_duration:.2f}s)"
+            if DEBUG_MODE:
+                print(f"ERROR: {error_detail}")
+            # Return a 500 error if retrieval fails fundamentally
+            raise HTTPException(status_code=500, detail=error_detail)
+
         if not results:
             if DEBUG_MODE:
                 print("No relevant documents found")
+            # If no documents, inform the user, don't proceed to LLM
+            overall_duration = time.time() - overall_start_time
+            if DEBUG_MODE: print(f"⏱️ Request finished (no results) in {overall_duration:.2f} seconds.")
             return AnswerResponse(
-                answer="I couldn't find any relevant information in my knowledge base. Please try rephrasing your question.",
+                answer="I couldn't find specific information relevant to your question in the available documents. You could try rephrasing.",
                 sources=[],
                 filters_applied=filters
             )
-        
+
         # Format context for the LLM
         if DEBUG_MODE:
             print(f"Formatting {len(results)} documents for LLM")
         context = format_context_for_llm(results)
-        
+
         # Prepare sources for the response
         sources = prepare_sources(results)
-        
+
         if DEBUG_MODE:
-            print("Generating answer...")
-        
-        # Verify API key before attempting to call OpenAI
+            print("Generating answer using RAG context...")
+
+        # Verify API key is essential for the generator step
         api_key = load_api_key()
         if not api_key:
+            error_detail = "OpenAI API key not found. Cannot generate answer."
             if DEBUG_MODE:
-                print("ERROR: OpenAI API key not found")
+                print(f"ERROR: {error_detail}")
+            # Return error response, don't raise HTTPException here as sources were found
             return AnswerResponse(
-                answer="Error: OpenAI API key not found. Please set your API key in the .env file.",
-                sources=[],
+                answer=f"Error: {error_detail} Please set your API key.",
+                sources=[SourceItem(**s) for s in sources], # Include sources found so far
                 filters_applied=filters
             )
-            
-        # Use generate_answer from src/generator.py with direct implementation
+
+        # Use generate_answer from src/generator.py correctly with context
+        # --- Time the LLM generation step ---
+        generation_start_time = time.time()
         try:
-            # Direct implementation using generator module
+            # Create an answer generator instance
+            generator = create_answer_generator()
+            # Call generate_answer with all required parameters
+            answer = generate_answer(generator, context, request.question)
+            generation_duration = time.time() - generation_start_time
             if DEBUG_MODE:
-                print("Using generator module with direct implementation")
-            answer = generate_answer(context, request.question, use_direct_implementation=True)
-            if DEBUG_MODE:
-                print("Answer generated successfully using generator module")
+                print(f"⏱️ LLM answer generation took {generation_duration:.2f} seconds.")
+
         except Exception as gen_error:
+            generation_duration = time.time() - generation_start_time
+            error_detail = f"Error generating answer with LLM: {str(gen_error)} (attempt took {generation_duration:.2f}s)"
             if DEBUG_MODE:
-                print(f"Error using generator module: {str(gen_error)}")
-                print("Falling back to internal implementation")
-            # Fallback to our internal implementation
-                
-            # System prompt for the Quran assistant
-            system_prompt = """You are a knowledgeable Quran scholar assistant. Your task is to provide accurate, respectful, and helpful information about the Quran based on the context provided. Consider different interpretations where relevant, but avoid making claims without textual support.
+                print(f"ERROR: {error_detail}")
+            # Return error response, including sources found
+            # Don't fall back to another internal API call here
+            overall_duration = time.time() - overall_start_time
+            if DEBUG_MODE: print(f"⏱️ Request finished (generation error) in {overall_duration:.2f} seconds.")
+            return AnswerResponse(
+                answer=f"Error: {error_detail}",
+                sources=[SourceItem(**s) for s in sources],
+                filters_applied=filters
+            )
 
-Context information is below:
------------------
-{context}
------------------
-
-Given this context, provide a thoughtful response to the user's question. If the context doesn't contain sufficient information to answer fully, acknowledge the limitations while providing what you can based on the available information.
-
-Ensure your response is well-structured with:
-1. A direct answer to the question
-2. Supporting evidence from the Quran verses and/or tafsir provided in the context
-3. If applicable, mention different scholarly interpretations
-
-Cite specific Surah and verse numbers when referencing Quranic text (e.g., "Quran 2:255").
-""".format(context=context)
-            
-            # Use direct OpenAI implementation - based on our simplified working solution
-            import requests
-            import json
-            
-            print("Using direct OpenAI implementation with requests")
-            
-            url = "https://api.openai.com/v1/chat/completions"
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
-            }
-            
-            # Convert messages to JSON
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": request.question}
-            ]
-            
-            request_body = json.dumps({
-                "model": "gpt-3.5-turbo",
-                "messages": messages,
-                "temperature": 0
-            })
-            
-            # Disable proxies explicitly
-            proxies = {"http": None, "https": None}
-            
-            try:
-                # Make the API call with explicit proxy settings and error handling
-                response = requests.post(
-                    url, 
-                    headers=headers, 
-                    data=request_body,  # Using data instead of json parameter
-                    proxies=proxies,  
-                    timeout=45,
-                    verify=True  # Verify SSL certificates
-                )
-                
-                # Debug info
-                print(f"OpenAI API Status Code: {response.status_code}")
-                
-                if response.status_code == 200:
-                    try:
-                        response_data = response.json()
-                        answer = response_data['choices'][0]['message']['content']
-                    except (KeyError, json.JSONDecodeError) as e:
-                        print(f"Error parsing OpenAI response: {str(e)}")
-                        print(f"Response content: {response.text[:200]}...")
-                        answer = f"Error: Failed to parse the LLM response. Details: {str(e)}"
-                else:
-                    print(f"OpenAI API Error Response: {response.text}")
-                    answer = f"Error: API returned status code {response.status_code}. Please check your OpenAI API key."
-            except Exception as e:
-                print(f"Error calling OpenAI API: {str(e)}")
-                answer = f"Error: Failed to communicate with OpenAI API. Details: {str(e)}"
-        
         # Convert source dict to SourceItem model
-        source_items = [SourceItem(
-            source_type=s["source_type"],
-            reference=s["reference"],
-            content=s["content"]
-        ) for s in sources]
-        
+        source_items = [SourceItem(**s) for s in sources]
+
+        overall_duration = time.time() - overall_start_time
+        if DEBUG_MODE:
+            print(f"✅ Successfully processed question in {overall_duration:.2f} seconds.")
+
         return AnswerResponse(
             answer=answer,
             sources=source_items,
             filters_applied=filters
         )
+
+    except HTTPException as http_exc:
+         # Re-raise specific HTTP exceptions from retrieval
+         overall_duration = time.time() - overall_start_time
+         if DEBUG_MODE: print(f"⏱️ Request finished (HTTPException) in {overall_duration:.2f} seconds.")
+         raise http_exc
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing query: {str(e)}")
+        # Catch any other unexpected errors during processing
+        overall_duration = time.time() - overall_start_time
+        error_detail = f"Unexpected error processing query: {str(e)}"
+        if DEBUG_MODE:
+            import traceback
+            print(f"CRITICAL ERROR: {error_detail} (request took {overall_duration:.2f}s)")
+            traceback.print_exc() # Print full stack trace in debug mode
+        raise HTTPException(status_code=500, detail=error_detail)
 
 @app.get("/api/ask")
 async def ask_question_get(
