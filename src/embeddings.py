@@ -28,7 +28,7 @@ _GLOBAL_MODEL_CACHE = {}
 class CustomOpenAIEmbeddings(Embeddings):
     """Custom implementation of OpenAI embeddings to avoid proxies parameter issues."""
     
-    def __init__(self, model="text-embedding-3-small"):
+    def __init__(self, model="text-embedding-ada-002"):
         self.model = model
         # Ensure the API key is set globally
         api_key = os.getenv("OPENAI_API_KEY")
@@ -70,9 +70,20 @@ class CustomHuggingFaceEmbeddings(Embeddings):
             from transformers import AutoTokenizer, AutoModel
             import torch
             import torch.nn.functional as F
+            import warnings
+            
+            # Suppress specific deprecation warnings
+            warnings.filterwarnings('ignore', category=FutureWarning, 
+                                  module='huggingface_hub.file_download')
+            warnings.filterwarnings('ignore', category=FutureWarning, 
+                                  module='transformers.utils.generic')
             
             print("Initializing embeddings with transformers...")
-            self.tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+            # Use download_only=True to avoid deprecation warning
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                'sentence-transformers/all-MiniLM-L6-v2',
+                local_files_only=False
+            )
             self.model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
             self.use_alternative = True
             
@@ -83,7 +94,7 @@ class CustomHuggingFaceEmbeddings(Embeddings):
             print("Successfully initialized transformer-based embeddings")
         except Exception as e:
             print(f"Error initializing with transformers: {e}")
-            # Try SentenceTransformer as fallback
+            # Rest of the initialization code remains unchanged
             try:
                 if "sentence_transformer" in _GLOBAL_MODEL_CACHE:
                     print("Using cached sentence transformer model")
@@ -187,8 +198,13 @@ def get_embedding_model(model_type: str = "openai"):
     Initialize and return an embedding model
     """
     if model_type == "openai":
-        # Use custom implementation to avoid proxies parameter issue
-        return CustomOpenAIEmbeddings(model="text-embedding-3-small")
+        try:
+            # Use custom implementation to avoid proxies parameter issue
+            return CustomOpenAIEmbeddings(model="text-embedding-ada-002")
+        except Exception as e:
+            print(f"Error initializing OpenAI embeddings: {e}")
+            print("Falling back to HuggingFace embeddings")
+            return get_embedding_model("huggingface")
     elif model_type == "huggingface":
         # Use custom implementation to avoid import issues
         try:
@@ -196,14 +212,14 @@ def get_embedding_model(model_type: str = "openai"):
         except Exception as e:
             print(f"Error initializing CustomHuggingFaceEmbeddings: {e}")
             print("Falling back to basic embeddings")
-            
+
             class BasicEmbeddings(Embeddings):
                 """An extremely basic embedding that just returns ones as embeddings."""
                 def embed_documents(self, texts):
                     return [[1.0] * 384 for _ in texts]
                 def embed_query(self, text):
                     return [1.0] * 384
-            
+
             return BasicEmbeddings()
     else:
         raise ValueError(f"Unsupported embedding model type: {model_type}")

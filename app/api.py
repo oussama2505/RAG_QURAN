@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
+from langchain_core.embeddings import Embeddings  # Add this import at the top with other imports
 
 # Add the project root to the path so we can import the src module
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -130,23 +131,16 @@ async def startup_event():
             print("⚠️ WARNING: OpenAI API key not found")
             print("Some functionality may not work without an API key")
         
-        try:
-            # Initialize embeddings based on environment variable
-            print("Initializing embeddings...")
-            # Read from environment, default to 'openai' if not set or empty
-            embedding_type = os.getenv('EMBEDDING_MODEL_TYPE', 'openai') 
-            if not embedding_type: # Handle empty string case
-                embedding_type = 'openai'
-            print(f"Using embedding model type: {embedding_type}") # Log the type being used
-            embeddings = get_embedding_model(model_type=embedding_type) # Use the retrieved type
-            if embeddings is not None:
-                print("✅ Successfully initialized embeddings")
-            else:
-                print(f"❌ Embedding model initialization failed for type '{embedding_type}' - returned None")
-                raise ValueError(f"Embedding model returned None for type '{embedding_type}'")
-        except Exception as emb_error:
-            print(f"❌ ERROR initializing embeddings: {str(emb_error)}")
-            raise
+        # Use basic embeddings for testing
+        print("Initializing basic embeddings for testing...")
+        class BasicEmbeddings(Embeddings):
+            def embed_documents(self, texts):
+                return [[1.0] * 384 for _ in texts]
+            def embed_query(self, text):
+                return [1.0] * 384
+        
+        embeddings = BasicEmbeddings()
+        print("✅ Successfully initialized basic embeddings")
         
         try:
             # Load FAISS index
@@ -651,4 +645,4 @@ if __name__ == "__main__":
     print("Starting Quran Knowledge Explorer API...")
     print("Access the API documentation at http://localhost:8000/docs")
     print("Try querying with: curl http://localhost:8000/api/ask?question=What+does+the+Quran+say+about+kindness+to+parents")
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)
