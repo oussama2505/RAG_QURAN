@@ -41,7 +41,7 @@ Cite specific Surah and verse numbers when referencing Quranic text (e.g., "Qura
 
 def create_answer_generator(model_name="gpt-3.5-turbo", temperature=0, max_tokens=1000):
     """
-    Create an LLM chain for generating answers
+    Create a runnable sequence for generating answers using the new LangChain pattern
     """
     # Get an LLM instance using our unified client
     llm = get_chat_model(
@@ -51,7 +51,8 @@ def create_answer_generator(model_name="gpt-3.5-turbo", temperature=0, max_token
     )
     
     prompt = create_quran_rag_prompt()
-    return LLMChain(llm=llm, prompt=prompt)
+    # Create a runnable sequence instead of LLMChain
+    return prompt | llm
 
 def generate_answer(generator, context: str, question: str) -> str:
     """
@@ -62,9 +63,29 @@ def generate_answer(generator, context: str, question: str) -> str:
         print(f"Generating answer for question: {question[:50]}...")
         print(f"Context length: {len(context)} characters")
         
-        # Run the chain with timeout handling
-        response = generator.run(context=context, question=question)
-        return response
+        # Invoke the runnable sequence
+        response = generator.invoke({"context": context, "question": question})
+        
+        # Handle the response based on its type
+        if hasattr(response, 'content'):
+            return response.content
+        elif isinstance(response, (str, bytes)):
+            return str(response)
+        elif isinstance(response, list) and response:
+            # If we get a list of messages, return the content of the last one
+            last_message = response[-1]
+            if hasattr(last_message, 'content'):
+                return last_message.content
+            return str(last_message)
+        elif isinstance(response, dict):
+            # Try different possible keys in order of preference
+            for key in ['content', 'text', 'answer', 'response']:
+                if key in response:
+                    return str(response[key])
+            return str(response)
+            
+        return str(response)
+            
     except Exception as e:
         error_msg = f"Error generating answer: {str(e)}"
         print(error_msg)

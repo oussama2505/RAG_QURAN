@@ -536,6 +536,15 @@ async def ask_question(request: QuestionRequest):
             generator = create_answer_generator()
             # Call generate_answer with all required parameters
             answer = generate_answer(generator, context, request.question)
+            
+            # Ensure answer is a string
+            if isinstance(answer, dict):
+                # If answer is a dict, extract the content or convert to string
+                answer = str(answer.get('content', str(answer)))
+            elif not isinstance(answer, str):
+                # Convert any non-string answer to string
+                answer = str(answer)
+                
             generation_duration = time.time() - generation_start_time
             if DEBUG_MODE:
                 print(f"⏱️ LLM answer generation took {generation_duration:.2f} seconds.")
