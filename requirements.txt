@@ -1,16 +1,29 @@
+# RAG_QURAN Requirements
+
+# Core Dependencies
+openai==1.10.0
+python-dotenv==1.0.0
+pydantic==2.5.3
+typing-extensions==4.9.0
+requests==2.31.0
+
+# LangChain Components
 langchain==0.1.5
 langchain-openai==0.0.5
 langchain-community==0.0.17
-openai==1.10.0
-fastapi==0.109.0
-streamlit==1.30.0
-uvicorn==0.25.0
-python-dotenv==1.0.0
-pydantic==2.5.3
+langchain-core==0.1.9
+
+# Vector Database & Embeddings
+faiss-cpu==1.7.4
 chromadb==0.4.22
-# Use specific version of huggingface_hub that works with sentence-transformers
 huggingface_hub==0.15.1
 sentence-transformers==2.2.2
-typing-extensions==4.9.0
+
+# Data Processing
 numpy==1.26.3
 pandas==2.1.4
+
+# API & Web Interface
+fastapi==0.109.0
+uvicorn==0.25.0
+streamlit==1.30.0

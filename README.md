@@ -1,5 +1,8 @@
 # Quran Knowledge Explorer - RAG System
 
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+
 A Retrieval-Augmented Generation (RAG) system for exploring and understanding the Quran. This system combines the power of vector embeddings for semantic search with OpenAI's language models to provide accurate and contextually relevant answers about the Quran.
 
 ## Features
@@ -9,6 +12,9 @@ A Retrieval-Augmented Generation (RAG) system for exploring and understanding th
 - **Filter by surah and verse** to narrow down your queries
 - **Multiple interfaces**: REST API and Streamlit web UI
 - **Docker support** for easy deployment
+- **Robust error handling** for OpenAI API integration
+- **Multiple fallback mechanisms** for reliable operation
+- **Direct and LangChain** implementations for flexibility
 
 ## Project Structure
 
@@ -21,10 +27,13 @@ RAG_QURAN/
 │   ├── quran.json        # Quran text in JSON format
 │   └── tafsirs/          # Directory for tafsir JSON files
 ├── src/                  # Core implementation
+│   ├── api_key_manager.py # API key management
 │   ├── config.py         # Configuration settings
 │   ├── data_processing.py# Data loading and processing
+│   ├── direct_openai.py  # Direct OpenAI API integration
 │   ├── embeddings.py     # Vector embeddings implementation
 │   ├── generator.py      # Answer generation with LLM
+│   ├── llm_client.py     # Unified LLM client implementation
 │   ├── main.py           # Main orchestration code
 │   ├── retriever.py      # Retrieval components
 │   └── utils.py          # Utility functions
@@ -189,6 +198,20 @@ Supported models include:
 - gpt-4
 - gpt-3.5-turbo
 
+### OpenAI Integration Options
+
+The system provides multiple options for OpenAI integration:
+
+1. **Direct Integration** - Uses `direct_openai.py` to communicate directly with OpenAI API, bypassing LangChain.
+   - More reliable for some environments
+   - Simpler error handling
+   - Recommended for production use
+
+2. **LangChain Integration** - Uses LangChain for OpenAI integration.
+   - More extensible
+   - Better for complex chains and agents
+   - Falls back to direct integration if it fails
+
 ### Changing the Embedding Model
 
 You can use different embedding models by setting the `EMBEDDING_MODEL_TYPE` in your `.env` file:
@@ -214,3 +237,20 @@ Some ideas for extending this project:
 - [OpenAI Cookbook: RAG with OpenAI embeddings](https://github.com/openai/openai-cookbook)
 - [Haystack Documentation](https://docs.haystack.deepset.ai/)
 - [Chroma Vector Database](https://docs.trychroma.com/)
+
+## Changelog
+
+### Version 1.0.0 (2025-04-10)
+
+- Initial release with core RAG functionality
+- Multiple implementation options for OpenAI integration:
+  - Direct OpenAI API integration via `direct_openai.py`
+  - LangChain-based integration with fallback mechanisms
+  - Unified LLM client with robust error handling
+- Fixed issues with OpenAI API response handling
+- Added detailed documentation and examples
+- Implemented API and Streamlit interfaces
+
+## License
+
+MIT
