@@ -120,36 +120,18 @@ class UnifiedLLMChat(BaseChatModel):
             # Log the raw response for debugging
             print("Raw OpenAI response:", response)
 
-            # Handle response formats
-            if isinstance(response, dict):
-                # Legacy format
-                if 'choices' in response and response['choices']:
-                    choice = response['choices'][0]
-                    if 'message' in choice and 'content' in choice['message']:
-                        content = choice['message']['content']
-                    elif 'text' in choice:
-                        content = choice['text']
-                    else:
-                        content = str(choice)
-                else:
-                    content = str(response)
-            elif isinstance(response, list):
-                # New format: list of messages
-                last_message = response[-1]
-                if hasattr(last_message, 'content'):
-                    content = last_message.content
-                elif isinstance(last_message, dict):
-                    content = last_message.get('content', str(last_message))
-                else:
-                    content = str(last_message)
+            # Extract content from the response
+            if hasattr(response, 'choices') and response.choices:
+                # Extract the first choice's message content
+                content = response.choices[0].message.content
             else:
-                # Fallback
+                # Fallback to string representation if choices are missing
                 content = str(response)
 
             # Create a proper Generation object for LangChain
             generation = Generation(
                 text=content,
-                generation_info={"finish_reason": "stop"}
+                generation_info={"finish_reason": response.choices[0].finish_reason if response.choices else "unknown"}
             )
             return LLMResult(generations=[[generation]])
 

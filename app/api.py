@@ -534,16 +534,43 @@ async def ask_question(request: QuestionRequest):
         try:
             # Create an answer generator instance
             generator = create_answer_generator()
-            # Call generate_answer with all required parameters
-            answer = generate_answer(generator, context, request.question)
             
-            # Ensure answer is a string
-            if isinstance(answer, dict):
-                # If answer is a dict, extract the content or convert to string
-                answer = str(answer.get('content', str(answer)))
-            elif not isinstance(answer, str):
-                # Convert any non-string answer to string
-                answer = str(answer)
+            # Try direct_openai approach first (more reliable)
+            answer = None
+            try:
+                from src.direct_openai import generate_answer_with_openai
+                print("API using direct OpenAI implementation first")
+                direct_answer = generate_answer_with_openai(context, request.question)
+                if direct_answer and isinstance(direct_answer, str):
+                    answer = direct_answer
+                    print("API successfully used direct OpenAI implementation")
+            except Exception as direct_error:
+                print(f"API direct OpenAI implementation failed: {str(direct_error)}")
+                
+            # If direct approach failed, fall back to LangChain
+            if not answer:
+                try:
+                    # Call generate_answer with all required parameters
+                    print("API falling back to LangChain implementation")
+                    langchain_answer = generate_answer(generator, context, request.question)
+                    
+                    # Ensure answer is a string
+                    if isinstance(langchain_answer, dict):
+                        # If answer is a dict, extract the content or convert to string
+                        answer = str(langchain_answer.get('content', str(langchain_answer)))
+                    elif hasattr(langchain_answer, 'content'):
+                        # If it has content attribute, use that
+                        answer = langchain_answer.content
+                    elif isinstance(langchain_answer, list) and langchain_answer and hasattr(langchain_answer[0], 'content'):
+                        # If it's a list of message-like objects
+                        answer = langchain_answer[0].content
+                    elif not isinstance(langchain_answer, str):
+                        # Convert any non-string answer to string
+                        answer = str(langchain_answer)
+                    else:
+                        answer = langchain_answer
+                except Exception as langchain_error:
+                    raise Exception(f"Both OpenAI direct and LangChain approaches failed: {str(langchain_error)}")
                 
             generation_duration = time.time() - generation_start_time
             if DEBUG_MODE:
