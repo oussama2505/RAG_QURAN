@@ -103,39 +103,56 @@ class UnifiedLLMChat(BaseChatModel):
         try:
             if not self.openai_client:
                 raise ValueError("OpenAI client not initialized")
-                
+
+            # Convert LangChain messages to OpenAI format
             message_dicts = self._convert_messages_to_openai_format(messages)
-            
-            if self.openai_client.is_legacy_client():
-                print("Using legacy OpenAI client")
-                response = self.openai_client.client.ChatCompletion.create(
-                    model=self.model_name,
-                    messages=message_dicts,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                    stop=stop,
-                    stream=False
-                )
-                content = response['choices'][0]['message']['content']
+
+            # Call the OpenAI API
+            response = self.openai_client.client.chat.completions.create(
+                model=self.model_name,
+                messages=message_dicts,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                stop=stop,
+                stream=False
+            )
+
+            # Log the raw response for debugging
+            print("Raw OpenAI response:", response)
+
+            # Handle response formats
+            if isinstance(response, dict):
+                # Legacy format
+                if 'choices' in response and response['choices']:
+                    choice = response['choices'][0]
+                    if 'message' in choice and 'content' in choice['message']:
+                        content = choice['message']['content']
+                    elif 'text' in choice:
+                        content = choice['text']
+                    else:
+                        content = str(choice)
+                else:
+                    content = str(response)
+            elif isinstance(response, list):
+                # New format: list of messages
+                last_message = response[-1]
+                if hasattr(last_message, 'content'):
+                    content = last_message.content
+                elif isinstance(last_message, dict):
+                    content = last_message.get('content', str(last_message))
+                else:
+                    content = str(last_message)
             else:
-                print("Using new OpenAI client")
-                response = self.openai_client.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=message_dicts,
-                    temperature=self.temperature,
-                    max_tokens=self.max_tokens,
-                    stop=stop,
-                    stream=False
-                )
-                content = response.choices[0].message.content
-            
+                # Fallback
+                content = str(response)
+
             # Create a proper Generation object for LangChain
             generation = Generation(
                 text=content,
                 generation_info={"finish_reason": "stop"}
             )
             return LLMResult(generations=[[generation]])
-            
+
         except Exception as e:
             error_msg = f"Error in UnifiedLLMChat._generate: {str(e)}"
             print(error_msg)

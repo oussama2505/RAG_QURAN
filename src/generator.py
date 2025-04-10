@@ -40,10 +40,7 @@ Cite specific Surah and verse numbers when referencing Quranic text (e.g., "Qura
     return ChatPromptTemplate.from_messages([system_message_prompt, human_message_prompt])
 
 def create_answer_generator(model_name="gpt-3.5-turbo", temperature=0, max_tokens=1000):
-    """
-    Create a runnable sequence for generating answers using the new LangChain pattern
-    """
-    # Get an LLM instance using our unified client
+    """Create a chain for generating answers"""
     llm = get_chat_model(
         model_name=model_name,
         temperature=temperature,
@@ -51,7 +48,6 @@ def create_answer_generator(model_name="gpt-3.5-turbo", temperature=0, max_token
     )
     
     prompt = create_quran_rag_prompt()
-    # Create a runnable sequence instead of LLMChain
     return prompt | llm
 
 def generate_answer(generator, context: str, question: str) -> str:
@@ -59,31 +55,49 @@ def generate_answer(generator, context: str, question: str) -> str:
     Generate an answer based on the context and question
     """
     try:
-        # Log query details for debugging
         print(f"Generating answer for question: {question[:50]}...")
         print(f"Context length: {len(context)} characters")
         
-        # Invoke the runnable sequence
-        response = generator.invoke({"context": context, "question": question})
+        # Invoke chain with input variables
+        response = generator.invoke({
+            "context": context,
+            "question": question
+        })
         
-        # Handle the response based on its type
+        # Handle LangChain AIMessage or ChatMessage response
         if hasattr(response, 'content'):
             return response.content
-        elif isinstance(response, (str, bytes)):
-            return str(response)
-        elif isinstance(response, list) and response:
-            # If we get a list of messages, return the content of the last one
+            
+        # Handle list of messages format (new LangChain format)
+        if isinstance(response, list):
+            if not response:
+                return "No response generated"
+            # Get the last message from the list
             last_message = response[-1]
+            # Handle AIMessage or ChatMessage object
             if hasattr(last_message, 'content'):
                 return last_message.content
+            # Handle dictionary format
+            if isinstance(last_message, dict):
+                return last_message.get('content', str(last_message))
+            # Handle string format
             return str(last_message)
-        elif isinstance(response, dict):
-            # Try different possible keys in order of preference
-            for key in ['content', 'text', 'answer', 'response']:
-                if key in response:
-                    return str(response[key])
+            
+        # Handle legacy dict format
+        if isinstance(response, dict):
+            if 'content' in response:
+                return response['content']
+            elif 'generations' in response:
+                generations = response['generations']
+                if generations and isinstance(generations, list):
+                    first_gen = generations[0]
+                    if isinstance(first_gen, list) and first_gen:
+                        return first_gen[0].text
+                    elif isinstance(first_gen, dict):
+                        return first_gen.get('text', '')
             return str(response)
             
+        # Final fallback - convert to string
         return str(response)
             
     except Exception as e:

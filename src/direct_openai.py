@@ -63,8 +63,16 @@ Cite specific Surah and verse numbers when referencing Quranic text (e.g., "Qura
             max_tokens=1000
         )
         
-        # Extract and return answer
-        return response.choices[0].message.content
+        # Handle both legacy and new client response formats
+        try:
+            # New client format
+            return response.choices[0].message.content
+        except AttributeError:
+            # Legacy client format
+            if isinstance(response, dict):
+                return response['choices'][0]['message']['content']
+            else:
+                return str(response)
     
     except Exception as e:
         print(f"Error generating answer with OpenAI: {e}")
