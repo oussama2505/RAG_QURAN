@@ -1,6 +1,6 @@
 # Quran Knowledge Explorer - RAG System
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 A Retrieval-Augmented Generation (RAG) system for exploring and understanding the Quran. This system combines the power of vector embeddings for semantic search with OpenAI's language models to provide accurate and contextually relevant answers about the Quran.
@@ -10,7 +10,7 @@ A Retrieval-Augmented Generation (RAG) system for exploring and understanding th
 - **Semantic search** through Quranic verses and tafsirs (explanations)
 - **Contextual answers** generated using advanced LLMs (using OpenAI)
 - **Filter by surah and verse** to narrow down your queries
-- **Multiple interfaces**: REST API and Streamlit web UI
+- **Modern UI**: Svelte-based frontend with REST API backend
 - **Docker support** for easy deployment
 - **Robust error handling** for OpenAI API integration
 - **Multiple fallback mechanisms** for reliable operation
@@ -20,9 +20,11 @@ A Retrieval-Augmented Generation (RAG) system for exploring and understanding th
 
 ```
 RAG_QURAN/
-├── app/                  # User interfaces
-│   ├── api.py            # FastAPI implementation
-│   └── streamlit_app.py  # Streamlit web interface
+├── app/                  # Backend API
+│   └── api.py            # FastAPI implementation
+├── frontend/             # Svelte frontend
+│   ├── src/              # Frontend source code
+│   └── public/           # Static assets
 ├── data/                 # Data directory
 │   ├── quran.json        # Quran text in JSON format
 │   └── tafsirs/          # Directory for tafsir JSON files
@@ -107,45 +109,51 @@ The system expects Quran and tafsir data in a specific format. Prepare your data
    ```
 
 4. Access the services:
-   - Streamlit UI: http://localhost:8501
+   - Frontend UI: http://localhost:3000
    - API Documentation: http://localhost:8000/docs
 
 ### Option 2: Local Installation
 
 1. Clone the repository or prepare the files as shown in the project structure.
 
-2. Create a virtual environment and install dependencies:
+2. Backend Setup:
    ```bash
    python -m venv quran_env
    source quran_env/bin/activate  # On Windows: quran_env\Scripts\activate
    pip install -r requirements.txt
    ```
 
-3. Set up your `.env` file with your OpenAI API key:
+3. Frontend Setup:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+4. Set up your `.env` file with your OpenAI API key:
    ```
    OPENAI_API_KEY=your_openai_api_key_here
    ```
 
-4. Run the applications:
-   - For the API:
+5. Run the applications:
+   - Start the API:
      ```bash
      cd path/to/RAG_QURAN
      uvicorn app.api:app --reload
      ```
-   - For the Streamlit UI:
+   - Start the Frontend:
      ```bash
-     cd path/to/RAG_QURAN
-     streamlit run app/streamlit_app.py
+     cd frontend
+     npm run dev
      ```
 
 ## Usage
 
-### Using the Streamlit UI
+### Using the Frontend
 
-1. Open http://localhost:8501 in your browser
-2. Enter your question about the Quran in the text area
-3. Optionally, set surah and verse filters in the sidebar
-4. Click "Get Answer" to receive a response
+1. Open http://localhost:3000 in your browser
+2. Enter your question about the Quran in the search field
+3. Use the filters to narrow down your search by surah and verse
+4. Submit your query to receive a detailed response with relevant verses and explanations
 
 ### Using the API
 

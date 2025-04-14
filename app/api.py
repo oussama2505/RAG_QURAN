@@ -682,3 +682,9 @@ if __name__ == "__main__":
     print("Access the API documentation at http://localhost:8000/docs")
     print("Try querying with: curl http://localhost:8000/api/ask?question=What+does+the+Quran+say+about+kindness+to+parents")
     uvicorn.run("api:app", host="127.0.0.1", port=8000, reload=True)
+
+# Add this after your other endpoints
+@app.get("/health")
+async def health_check():
+    """Health check endpoint to verify API is running"""
+    return {"status": "ok", "rag_system_ready": rag_system_ready}

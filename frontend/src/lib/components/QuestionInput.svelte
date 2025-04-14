@@ -1,0 +1,67 @@
+<script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+  import { appStore } from '../stores/appStore';
+  
+  export let initialQuestion = '';
+  export let isLoading = false;
+  
+  let question = initialQuestion;
+  const dispatch = createEventDispatcher();
+  
+  function handleSubmit() {
+    if (!question.trim()) return;
+    
+    dispatch('submit', question);
+    
+    // Add to recent questions if not already there
+    if (!$appStore.recentQuestions.includes(question)) {
+      appStore.addRecentQuestion(question);
+    }
+  }
+  
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' && !event.shiftKey && !isLoading) {
+      event.preventDefault();
+      handleSubmit();
+    }
+  }
+</script>
+
+<div class="question-input-container">
+  <form on:submit|preventDefault={handleSubmit} class="flex flex-col space-y-4">
+    <div class="form-control">
+      <label for="question" class="label">
+        <span class="label-text text-lg font-medium">Ask about the Quran</span>
+      </label>
+      <div class="relative">
+        <textarea
+          id="question"
+          bind:value={question}
+          on:keydown={handleKeydown}
+          placeholder="Enter your question about the Quran..."
+          class="textarea textarea-bordered w-full h-24 pr-12 resize-none"
+          disabled={isLoading}
+        ></textarea>
+        <button
+          type="submit"
+          class="btn btn-primary absolute bottom-2 right-2"
+          disabled={!question.trim() || isLoading}
+        >
+          {#if isLoading}
+            <span class="loading loading-spinner loading-sm"></span>
+          {:else}
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          {/if}
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<style>
+  .question-input-container {
+    width: 100%;
+  }
+</style>

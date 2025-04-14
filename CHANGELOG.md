@@ -5,11 +5,27 @@ All notable changes to the RAG_QURAN project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-04-15
+
+### Added
+- Modern Svelte-based frontend interface
+- Enhanced user experience with responsive design
+- Real-time search suggestions
+- Improved verse and tafsir display
+- Better error handling and loading states
+
+### Changed
+- Migrated frontend from Streamlit to Svelte
+- Updated Docker configuration for new frontend
+- Improved API response format for better frontend integration
+
+### Removed
+- Streamlit-based web interface
+
 ## [1.0.0] - 2025-04-10
 
 ### Added
 - Initial release with core RAG functionality
-- Streamlit web UI for interactive querying
 - FastAPI REST API with comprehensive documentation
 - Vector embedding search using FAISS
 - Multiple embedding model options (OpenAI, HuggingFace)
