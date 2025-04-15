@@ -1,173 +1,205 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { appStore } from './lib/stores/appStore';
+  import { appStore, type Source } from './lib/stores/appStore';
   import { api } from './lib/services/api';
+  
+  // Import all components
+  import Header from './lib/components/Header.svelte';
+  import Sidebar from './lib/components/Sidebar.svelte';
   import QuestionInput from './lib/components/QuestionInput.svelte';
   import ResponseDisplay from './lib/components/ResponseDisplay.svelte';
   import RecentQuestions from './lib/components/RecentQuestions.svelte';
-  import SurahFilter from './lib/components/SurahFilter.svelte';
   import StatusIndicator from './lib/components/StatusIndicator.svelte';
-  import APIKeyManager from './lib/components/APIKeyManager.svelte';
+  import SurahFilter from './lib/components/SurahFilter.svelte';
+  import LoadingSpinner from './lib/components/LoadingSpinner.svelte';
+  import ErrorBoundary from './lib/components/ErrorBoundary.svelte';
+  import KeyboardShortcuts from './lib/components/KeyboardShortcuts.svelte';
+  import Toast from './lib/components/Toast.svelte';
   
+  // State management
   let isLoading = false;
-  let currentQuestion = '';
-  let currentResponse = null;
-  let showApiKeyManager = false;
-  let showFilters = false;
-  let error = null;
-  let apiAvailable = true;
+  let status: 'idle' | 'loading' | 'success' | 'error' = 'idle';
+  let statusMessage = '';
+  let question = '';
   
-  // Check API availability on mount
-  onMount(async () => {
-    try {
-      apiAvailable = await api.checkHealth();
-    } catch (e) {
-      apiAvailable = false;
-      console.error('API health check failed:', e);
+  // Source type is imported from appStore
+
+  // Define response type based on your API response structure
+  interface QuranResponse {
+    answer?: string;
+    verses?: any[];
+    sources?: Source[];
+    filters_applied: {
+      surah_filter?: number;
+      verse_filter?: number;
+    };
+    // Add other fields that match your actual API response
+  }
+  
+  let response: QuranResponse | null = null;
+  let showKeyboardShortcuts = false;
+  let showSurahFilter = false;
+  let selectedSurah: number | null = null;
+  type ToastType = 'info' | 'warning' | 'error';
+  let toast = { show: false, message: '', type: 'info' as ToastType };
+  
+  const quranQuote = {
+    text: "Indeed, We have sent it down as an Arabic Qur'an that you might understand.",
+    author: "Quran 12:2"
+  };
+  
+  onMount(() => {
+    // Initialize any data if needed
+    const storedQuestion = $appStore.question;
+    if (storedQuestion) {
+      question = storedQuestion;
     }
   });
   
-  async function handleQuestionSubmit(event) {
-    const question = event.detail;
-    currentQuestion = question;
-    isLoading = true;
-    error = null;
+  // Handle question submission
+  async function handleQuestionSubmit(event: CustomEvent) {
+    const submittedQuestion = event.detail;
+    
+    if (!$appStore.apiKey) {
+      toast = { 
+        show: true, 
+        message: 'Please set your API key first', 
+        type: 'warning' 
+      };
+      return;
+    }
     
     try {
-      // Call the API service
-      const response = await api.queryQuran(
-        question, 
-        $appStore.selectedSurah
-      );
+      isLoading = true;
+      status = 'loading';
+      statusMessage = 'Searching for relevant Quranic knowledge...';
       
-      currentResponse = response;
+      // Make API call with filters if set
+      const params: any = {};
+      if (selectedSurah) {
+        params.surah_filter = selectedSurah;
+      }
       
-      // Add to recent questions
-      appStore.addRecentQuestion(question);
-    } catch (err) {
-      error = err.message || 'An error occurred';
-      console.error('Error querying:', err);
+      response = await api.queryQuran(submittedQuestion, selectedSurah === null ? undefined : selectedSurah);
+      
+      status = 'success';
+      statusMessage = 'Answer generated successfully';
+    } catch (error) {
+      status = 'error';
+      statusMessage = error instanceof Error ? error.message : 'Failed to get answer';
+      
+      toast = {
+        show: true,
+        message: statusMessage,
+        type: 'error'
+      };
     } finally {
       isLoading = false;
     }
   }
   
-  function handleQuestionSelect(question) {
-    currentQuestion = question;
+  function handleSurahChange(event: CustomEvent) {
+    selectedSurah = event.detail;
   }
   
-  function toggleApiKeyManager() {
-    showApiKeyManager = !showApiKeyManager;
+  function handleQuestionSelect(selectedQuestion: string) {
+    question = selectedQuestion;
+    // You might want to auto-submit the question here
   }
   
-  function toggleFilters() {
-    showFilters = !showFilters;
-  }
-  
-  function handleApiKeySave(event) {
-    const apiKey = event.detail;
-    appStore.setApiKey(apiKey);
-    showApiKeyManager = false;
+  function closeToast() {
+    toast.show = false;
   }
 </script>
 
-<main class="container mx-auto px-4 py-8 max-w-4xl">
-  <header class="mb-8 text-center">
-    <h1 class="text-3xl font-bold mb-2">Quran RAG Explorer</h1>
-    <p class="text-lg text-neutral-600">Ask questions about the Quran and receive AI-powered answers with sources</p>
+<ErrorBoundary>
+  <div class="app min-h-screen bg-base-100">
+    <Header quote={quranQuote} />
     
-    {#if !apiAvailable}
-      <div class="alert alert-warning mt-4">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-        </svg>
-        <span>Backend API is not available. Make sure the backend server is running.</span>
-      </div>
-    {/if}
-  </header>
-  
-  <div class="flex flex-col md:flex-row gap-6">
-    <!-- Sidebar -->
-    <aside class="w-full md:w-1/3 space-y-6">
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <RecentQuestions onQuestionSelect={handleQuestionSelect} />
-        </div>
-      </div>
-      
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-neutral">Settings</h3>
-          </div>
-          
+    <div class="container mx-auto px-4 py-8">
+      <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Sidebar with settings, filters, etc. -->
+        <aside class="w-full lg:w-1/4">
+          <Sidebar />
+        </aside>
+        
+        <!-- Main content area -->
+        <main class="w-full lg:w-3/4 space-y-8">
+          <!-- Question input and status -->
           <div class="space-y-4">
-            <button 
-              class="btn btn-outline btn-block"
-              on:click={toggleApiKeyManager}
-            >
-              {$appStore.apiKey ? 'Change API Key' : 'Set API Key'}
-            </button>
+            <QuestionInput 
+              initialQuestion={question}
+              isLoading={isLoading}
+              on:submit={handleQuestionSubmit}
+            />
             
-            <button 
-              class="btn btn-outline btn-block"
-              on:click={toggleFilters}
-            >
-              {showFilters ? 'Hide Filters' : 'Show Filters'}
-            </button>
+            <StatusIndicator 
+              status={status}
+              message={statusMessage}
+            />
+            
+            <!-- Surah filter -->
+            <div class="flex justify-between items-center">
+              <button 
+                class="btn btn-sm btn-ghost"
+                on:click={() => showSurahFilter = !showSurahFilter}
+              >
+                {showSurahFilter ? 'Hide Filters' : 'Show Filters'}
+              </button>
+              
+              <!-- Keyboard shortcuts toggle -->
+              <button 
+                class="btn btn-sm btn-ghost"
+                on:click={() => showKeyboardShortcuts = !showKeyboardShortcuts}
+              >
+                Keyboard Shortcuts
+              </button>
+            </div>
+            
+            <SurahFilter 
+              showFilter={showSurahFilter}
+              selectedSurah={selectedSurah}
+              on:change={handleSurahChange}
+            />
           </div>
-        </div>
-      </div>
-    </aside>
-    
-    <!-- Main content -->
-    <div class="w-full md:w-2/3 space-y-6">
-      <SurahFilter 
-        selectedSurah={$appStore.selectedSurah} 
-        showFilter={showFilters}
-      />
-      
-      <div class="card bg-base-100 shadow-lg">
-        <div class="card-body">
-          <QuestionInput 
-            initialQuestion={currentQuestion}
-            isLoading={isLoading}
-            on:submit={handleQuestionSubmit}
-          />
           
-          {#if error}
-            <div class="alert alert-error mt-4">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>{error}</span>
-            </div>
-          {/if}
-          
+          <!-- Loading indicator or Response -->
           {#if isLoading}
-            <div class="flex justify-center items-center py-8">
-              <div class="loading loading-spinner loading-lg"></div>
+            <div class="flex justify-center py-12">
+              <LoadingSpinner size="lg" />
             </div>
+          {:else if response && response.answer && response.sources}
+            <ResponseDisplay response={{
+              answer: response.answer,
+              sources: response.sources,
+              filters_applied: response.filters_applied
+            }} />
           {/if}
-        </div>
+          
+          <!-- Recent Questions -->
+          <RecentQuestions onQuestionSelect={handleQuestionSelect} />
+        </main>
       </div>
-      
-      {#if currentResponse}
-        <ResponseDisplay response={currentResponse} />
-      {/if}
     </div>
+    
+    <!-- Keyboard shortcuts panel -->
+    <KeyboardShortcuts visible={showKeyboardShortcuts} />
+    
+    <!-- Toast notifications -->
+    {#if toast.show}
+      <Toast 
+        message={toast.message}
+        type={toast.type}
+        onClose={closeToast}
+        duration={5000}
+      />
+    {/if}
   </div>
-  
-  <APIKeyManager 
-    apiKey={$appStore.apiKey}
-    isVisible={showApiKeyManager}
-    on:save={handleApiKeySave}
-    on:cancel={() => showApiKeyManager = false}
-  />
-</main>
+</ErrorBoundary>
 
 <style>
-  :global(body) {
-    background-color: #f8f9fa;
+  /* Add global styles here */
+  :global(.arabic) {
+    font-family: 'Traditional Arabic', 'Scheherazade New', serif;
   }
 </style>

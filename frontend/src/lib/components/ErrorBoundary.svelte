@@ -1,12 +1,21 @@
 <script lang="ts">
-  import { onError } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { slide } from 'svelte/transition';
   
   let error: Error | null = null;
   
-  onError((e) => {
-    error = e.error;
-    console.error('Caught error:', e.error);
+  function handleError(event: ErrorEvent) {
+    error = event.error || new Error(event.message);
+    console.error('Caught error:', error);
+    event.preventDefault();
+  }
+  
+  onMount(() => {
+    window.addEventListener('error', handleError);
+  });
+  
+  onDestroy(() => {
+    window.removeEventListener('error', handleError);
   });
 </script>
 
@@ -35,11 +44,3 @@
 {/if}
 
 <slot />
-
-<style>
-  .alert {
-    background-color: theme('colors.error.100');
-    color: theme('colors.error.800');
-    border: 1px solid theme('colors.error.200');
-  }
-</style>

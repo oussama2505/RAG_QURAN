@@ -12,7 +12,7 @@
   let showSettings = false;
 
   onMount(async () => {
-    const status = await api.checkApiStatus();
+    const status = await api.checkHealth();
     appStore.setApiStatus(status);
   });
 
