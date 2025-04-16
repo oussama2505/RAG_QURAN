@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { getShortcuts } from '../services/shortcuts';
+  import { getRegisteredShortcuts } from '../services/shortcuts';
   import { slide } from 'svelte/transition';
   
-  const shortcuts = getShortcuts();
+  const shortcuts = getRegisteredShortcuts();
   export let visible = false;
 </script>
 
