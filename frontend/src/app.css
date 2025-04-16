@@ -12,6 +12,45 @@
   .arabic {
     font-family: 'Amiri', serif;
   }
+
+  /* Estilos mejorados para modo oscuro */
+  [data-theme='dark'] .quran-container {
+    @apply prose-invert;
+  }
+
+  [data-theme='dark'] header .bg-white\/50 {
+    @apply bg-base-200/80 backdrop-blur-sm;
+  }
+
+  [data-theme='dark'] header .text-neutral-700,
+  [data-theme='dark'] header .text-neutral-600 {
+    @apply text-base-content;
+  }
+  
+  /* Mejoras adicionales para contraste en modo oscuro */
+  [data-theme='dark'] .bg-accent\/20 {
+    @apply bg-accent/10;
+  }
+  
+  [data-theme='dark'] .card {
+    @apply bg-base-200 shadow-xl;
+  }
+  
+  [data-theme='dark'] .card-bordered {
+    @apply border-base-300;
+  }
+  
+  [data-theme='dark'] .divider {
+    @apply opacity-30;
+  }
+  
+  [data-theme='dark'] blockquote {
+    @apply border-l-4 border-primary/50 bg-base-200/50;
+  }
+  
+  [data-theme='dark'] .btn-ghost {
+    @apply hover:bg-base-200;
+  }
 }
 
 @layer components {

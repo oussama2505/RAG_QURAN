@@ -47,7 +47,7 @@
   }
 </script>
 
-<aside class="bg-accent rounded-lg p-6 shadow-lg space-y-8">
+<aside class="bg-accent/20 dark:bg-base-200 rounded-lg p-6 shadow-lg space-y-8">
   <!-- Settings Toggle Button -->
   <div class="flex justify-end">
     <button
@@ -86,11 +86,11 @@
   <!-- API Key Section -->
   {#if !$appStore.apiKey}
     <div class="space-y-4">
-      <h3 class="text-xl font-bold text-neutral">API Key Setup</h3>
+      <h3 class="text-xl font-bold text-neutral dark:text-neutral-content">API Key Setup</h3>
       <form on:submit|preventDefault={handleApiKeySubmit} class="space-y-4">
         <div class="form-control">
           <label class="label" for="apiKey">
-            <span class="label-text text-neutral">OpenAI API Key</span>
+            <span class="label-text text-neutral dark:text-neutral-content">OpenAI API Key</span>
           </label>
           <input
             type="password"
@@ -102,7 +102,7 @@
         </div>
         
         <label class="label cursor-pointer">
-          <span class="label-text text-neutral">Save for future sessions</span>
+          <span class="label-text text-neutral dark:text-neutral-content">Save for future sessions</span>
           <input type="checkbox" bind:checked={saveKey} class="checkbox checkbox-primary" />
         </label>
         
@@ -115,10 +115,10 @@
 
   <!-- System Status -->
   <div class="space-y-4">
-    <h3 class="text-xl font-bold text-neutral">System Status</h3>
-    <div class="flex items-center space-x-2 bg-white/50 p-3 rounded-lg">
+    <h3 class="text-xl font-bold text-neutral dark:text-neutral-content">System Status</h3>
+    <div class="flex items-center space-x-2 bg-white/50 dark:bg-base-300/50 p-3 rounded-lg">
       <div class="w-3 h-3 rounded-full {$appStore.apiStatus ? 'bg-success' : 'bg-error'}"></div>
-      <span class="text-neutral">
+      <span class="text-neutral dark:text-neutral-content">
         {$appStore.apiStatus ? 'System Online' : 'System Offline'}
       </span>
     </div>
@@ -132,9 +132,9 @@
 
   <!-- About Section -->
   <div class="space-y-4">
-    <h3 class="text-xl font-bold text-neutral">About</h3>
-    <div class="prose prose-sm">
-      <p class="text-neutral-700">
+    <h3 class="text-xl font-bold text-neutral dark:text-neutral-content">About</h3>
+    <div class="prose prose-sm dark:prose-invert">
+      <p class="text-neutral-700 dark:text-neutral-200">
         This application uses advanced AI technology to help you explore and understand
         the Holy Quran through authentic sources including Quranic verses and trusted
         tafsir (interpretations).
