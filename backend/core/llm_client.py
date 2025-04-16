@@ -4,6 +4,7 @@ LLM client module to ensure consistent API access across the application.
 import os
 from typing import List, Dict, Any, Optional
 import openai
+import httpx
 from dotenv import load_dotenv
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
@@ -26,11 +27,21 @@ class OpenAIClient:
                 raise ValueError("OPENAI_API_KEY is not available")
             
             try:
-                # Initialize without proxies
-                cls._client = openai.OpenAI(api_key=api_key)
-            except (AttributeError, TypeError):
-                openai.api_key = api_key
-                cls._client = openai
+                # Create custom HTTP client with disabled proxies to avoid proxy issues
+                http_client = httpx.Client(proxies=None, transport=httpx.HTTPTransport(local_address="0.0.0.0"))
+                
+                # Initialize with custom HTTP client
+                cls._client = openai.OpenAI(api_key=api_key, http_client=http_client)
+            except Exception as e:
+                print(f"Warning: Could not create custom OpenAI client: {e}")
+                print("Falling back to default client initialization")
+                try:
+                    # Try without custom HTTP client
+                    cls._client = openai.OpenAI(api_key=api_key)
+                except (AttributeError, TypeError):
+                    # Fall back to legacy client for older versions
+                    openai.api_key = api_key
+                    cls._client = openai
         return cls._instance
     
     @property

@@ -4,6 +4,7 @@ This provides a simplified, reliable way to generate answers using OpenAI's API.
 """
 import os
 import openai
+import httpx
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -15,8 +16,18 @@ def get_openai_client():
     if not api_key:
         raise ValueError("OPENAI_API_KEY environment variable is required")
     
-    # Create client with minimal configuration to avoid proxy issues
-    return openai.OpenAI(api_key=api_key)
+    try:
+        # Create custom HTTP client with disabled proxies to avoid proxy issues
+        http_client = httpx.Client(proxies=None, transport=httpx.HTTPTransport(local_address="0.0.0.0"))
+        
+        # Create client with the custom HTTP client
+        return openai.OpenAI(api_key=api_key, http_client=http_client)
+    except Exception as e:
+        # If the above fails (e.g., with older versions of the openai package),
+        # fall back to the default client
+        print(f"Warning: Could not create custom OpenAI client: {e}")
+        print("Falling back to default client initialization")
+        return openai.OpenAI(api_key=api_key)
 
 def generate_answer_with_openai(context, question, model="gpt-3.5-turbo"):
     """
