@@ -5,6 +5,26 @@ All notable changes to the RAG_QURAN project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-04-17
+
+### Added
+- Multilingual support for Arabic and Spanish in the frontend
+- System status indicator in the UI
+- API key persistence across sessions
+
+### Changed
+- Refactored project structure for better organization
+  - Moved core implementation to `backend/core`
+  - Moved API implementation to `backend/api`
+  - Updated imports and configuration files
+- Updated Docker configuration to work with new structure
+- Enhanced error handling for API requests 
+
+### Fixed
+- API key validation issues
+- Improved error messages for system offline state
+- Fixed UI responsiveness on smaller screens 
+
 ## [1.1.0] - 2025-04-15
 
 ### Added
