@@ -1,5 +1,6 @@
 <script lang="ts">
   import { appStore } from '../stores/appStore';
+  import { languageStore } from '../stores/languageStore';
   import { onMount } from 'svelte';
   import { slide } from 'svelte/transition';
   import { api } from '../services/api';
@@ -45,9 +46,70 @@
   function toggleSettings() {
     showSettings = !showSettings;
   }
+  
+  // Translation getters
+  $: apiKeySetup = $languageStore === 'en' 
+    ? 'API Key Setup' 
+    : $languageStore === 'ar' 
+    ? 'إعداد مفتاح API' 
+    : 'Configuración de clave API';
+    
+  $: apiKeyLabel = $languageStore === 'en' 
+    ? 'OpenAI API Key' 
+    : $languageStore === 'ar' 
+    ? 'مفتاح API لـ OpenAI' 
+    : 'Clave API de OpenAI';
+    
+  $: apiKeyPlaceholder = $languageStore === 'en' 
+    ? 'Enter your API key' 
+    : $languageStore === 'ar' 
+    ? 'أدخل مفتاح API الخاص بك' 
+    : 'Ingrese su clave API';
+    
+  $: saveForFuture = $languageStore === 'en' 
+    ? 'Save for future sessions' 
+    : $languageStore === 'ar' 
+    ? 'حفظ للجلسات المستقبلية' 
+    : 'Guardar para sesiones futuras';
+    
+  $: saveApiKey = $languageStore === 'en' 
+    ? 'Save API Key' 
+    : $languageStore === 'ar' 
+    ? 'حفظ مفتاح API' 
+    : 'Guardar clave API';
+    
+  $: systemStatus = $languageStore === 'en' 
+    ? 'System Status' 
+    : $languageStore === 'ar' 
+    ? 'حالة النظام' 
+    : 'Estado del Sistema';
+    
+  $: systemOnline = $languageStore === 'en' 
+    ? 'System Online' 
+    : $languageStore === 'ar' 
+    ? 'النظام متصل' 
+    : 'Sistema en Línea';
+    
+  $: systemOffline = $languageStore === 'en' 
+    ? 'System Offline' 
+    : $languageStore === 'ar' 
+    ? 'النظام غير متصل' 
+    : 'Sistema Fuera de Línea';
+    
+  $: aboutTitle = $languageStore === 'en' 
+    ? 'About' 
+    : $languageStore === 'ar' 
+    ? 'حول' 
+    : 'Acerca de';
+    
+  $: aboutText = $languageStore === 'en' 
+    ? 'This application uses advanced AI technology to help you explore and understand the Holy Quran through authentic sources including Quranic verses and trusted tafsir (interpretations).' 
+    : $languageStore === 'ar' 
+    ? 'يستخدم هذا التطبيق تقنية الذكاء الاصطناعي المتقدمة لمساعدتك على استكشاف وفهم القرآن الكريم من خلال مصادر موثوقة بما في ذلك آيات القرآن والتفاسير الموثوقة.' 
+    : 'Esta aplicación utiliza tecnología avanzada de IA para ayudarlo a explorar y comprender el Sagrado Corán a través de fuentes auténticas que incluyen versículos coránicos e interpretaciones confiables (tafsir).';
 </script>
 
-<aside class="bg-accent/20 dark:bg-base-200 rounded-lg p-6 shadow-lg space-y-8">
+<aside class="bg-accent/20 dark:bg-base-200 rounded-lg p-6 shadow-lg space-y-8" class:rtl={$languageStore === 'ar'}>
   <!-- Settings Toggle Button -->
   <div class="flex justify-end">
     <button
@@ -80,34 +142,44 @@
 
   <!-- Settings Panel -->
   {#if showSettings}
-    <Settings />
+    <Settings visible={true} />
   {/if}
 
   <!-- API Key Section -->
   {#if !$appStore.apiKey}
     <div class="space-y-4">
-      <h3 class="text-xl font-bold text-neutral dark:text-neutral-content">API Key Setup</h3>
+      <h3 class="text-xl font-bold text-neutral dark:text-neutral-content" class:arabic={$languageStore === 'ar'}>
+        {apiKeySetup}
+      </h3>
       <form on:submit|preventDefault={handleApiKeySubmit} class="space-y-4">
         <div class="form-control">
           <label class="label" for="apiKey">
-            <span class="label-text text-neutral dark:text-neutral-content">OpenAI API Key</span>
+            <span class="label-text text-neutral dark:text-neutral-content" class:arabic={$languageStore === 'ar'}>
+              {apiKeyLabel}
+            </span>
           </label>
           <input
             type="password"
             id="apiKey"
             bind:value={apiKey}
             class="input input-bordered w-full"
-            placeholder="Enter your API key"
+            class:arabic={$languageStore === 'ar'}
+            placeholder={apiKeyPlaceholder}
+            dir={$languageStore === 'ar' ? 'rtl' : 'ltr'}
           />
         </div>
         
         <label class="label cursor-pointer">
-          <span class="label-text text-neutral dark:text-neutral-content">Save for future sessions</span>
+          <span class="label-text text-neutral dark:text-neutral-content" class:arabic={$languageStore === 'ar'}>
+            {saveForFuture}
+          </span>
           <input type="checkbox" bind:checked={saveKey} class="checkbox checkbox-primary" />
         </label>
         
         <button type="submit" class="btn btn-primary w-full">
-          Save API Key
+          <span class:arabic={$languageStore === 'ar'}>
+            {saveApiKey}
+          </span>
         </button>
       </form>
     </div>
@@ -115,11 +187,13 @@
 
   <!-- System Status -->
   <div class="space-y-4">
-    <h3 class="text-xl font-bold text-neutral dark:text-neutral-content">System Status</h3>
+    <h3 class="text-xl font-bold text-neutral dark:text-neutral-content" class:arabic={$languageStore === 'ar'}>
+      {systemStatus}
+    </h3>
     <div class="flex items-center space-x-2 bg-white/50 dark:bg-base-300/50 p-3 rounded-lg">
       <div class="w-3 h-3 rounded-full {$appStore.apiStatus ? 'bg-success' : 'bg-error'}"></div>
-      <span class="text-neutral dark:text-neutral-content">
-        {$appStore.apiStatus ? 'System Online' : 'System Offline'}
+      <span class="text-neutral dark:text-neutral-content" class:arabic={$languageStore === 'ar'}>
+        {$appStore.apiStatus ? systemOnline : systemOffline}
       </span>
     </div>
   </div>
@@ -132,12 +206,12 @@
 
   <!-- About Section -->
   <div class="space-y-4">
-    <h3 class="text-xl font-bold text-neutral dark:text-neutral-content">About</h3>
+    <h3 class="text-xl font-bold text-neutral dark:text-neutral-content" class:arabic={$languageStore === 'ar'}>
+      {aboutTitle}
+    </h3>
     <div class="prose prose-sm dark:prose-invert">
-      <p class="text-neutral-700 dark:text-neutral-200">
-        This application uses advanced AI technology to help you explore and understand
-        the Holy Quran through authentic sources including Quranic verses and trusted
-        tafsir (interpretations).
+      <p class="text-neutral-700 dark:text-neutral-200" class:arabic={$languageStore === 'ar'}>
+        {aboutText}
       </p>
     </div>
   </div>
@@ -150,5 +224,10 @@
   
   .rotate-90 {
     transform: rotate(90deg);
+  }
+  
+  .rtl {
+    direction: rtl;
+    text-align: right;
   }
 </style>

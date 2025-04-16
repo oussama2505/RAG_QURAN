@@ -1,19 +1,62 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { slide } from 'svelte/transition';
+  import { languageStore } from '../stores/languageStore';
   
   export let selectedSurah: number | null = null;
   export let showFilter = false;
   
   const dispatch = createEventDispatcher();
   
-  // Surah data - you might want to load this from an API or store
-  const surahs = [
-    { number: 1, name: "Al-Fatihah", englishName: "The Opening" },
-    { number: 2, name: "Al-Baqarah", englishName: "The Cow" },
-    { number: 3, name: "Aal-Imran", englishName: "The Family of Imran" },
-    // Add more surahs or load them dynamically
-  ];
+  // Multilingual surah data including Arabic and Spanish names
+  const surahsByLanguage = {
+    en: [
+      { number: 1, name: "Al-Fatihah", englishName: "The Opening" },
+      { number: 2, name: "Al-Baqarah", englishName: "The Cow" },
+      { number: 3, name: "Aal-Imran", englishName: "The Family of Imran" },
+      { number: 4, name: "An-Nisa", englishName: "The Women" },
+      { number: 5, name: "Al-Ma'idah", englishName: "The Table Spread" }
+      // Add more as needed
+    ],
+    ar: [
+      { number: 1, name: "الفاتحة", englishName: "الفاتحة" },
+      { number: 2, name: "البقرة", englishName: "البقرة" },
+      { number: 3, name: "آل عمران", englishName: "آل عمران" },
+      { number: 4, name: "النساء", englishName: "النساء" },
+      { number: 5, name: "المائدة", englishName: "المائدة" }
+      // Add more as needed
+    ],
+    es: [
+      { number: 1, name: "Al-Fatihah", englishName: "La Apertura" },
+      { number: 2, name: "Al-Baqarah", englishName: "La Vaca" },
+      { number: 3, name: "Aal-Imran", englishName: "La Familia de Imran" },
+      { number: 4, name: "An-Nisa", englishName: "Las Mujeres" },
+      { number: 5, name: "Al-Ma'idah", englishName: "La Mesa Servida" }
+      // Add more as needed
+    ]
+  };
+  
+  // Get the appropriate surah list based on language
+  $: surahs = surahsByLanguage[$languageStore];
+  
+  // Translation strings
+  $: filterTitle = $languageStore === 'en' 
+    ? 'Filter by Surah' 
+    : $languageStore === 'ar' 
+    ? 'تصفية حسب السورة' 
+    : 'Filtrar por Sura';
+  
+  $: selectLabel = $languageStore === 'en' 
+    ? 'Select Surah' 
+    : $languageStore === 'ar' 
+    ? 'اختر سورة' 
+    : 'Seleccionar Sura';
+  
+  $: allSurahs = $languageStore === 'en' 
+    ? 'All Surahs' 
+    : $languageStore === 'ar' 
+    ? 'جميع السور' 
+    : 'Todas las Suras';
   
   function handleSurahChange(event: Event) {
     const select = event.target as HTMLSelectElement;
@@ -35,26 +78,36 @@
 </script>
 
 {#if showFilter}
-  <div class="surah-filter" transition:slide>
-    <div class="card bg-base-100 shadow-lg">
+  <div class="surah-filter" transition:slide class:rtl={$languageStore === 'ar'}>
+    <div class="card bg-base-100 dark:bg-base-300 shadow-lg">
       <div class="card-body">
-        <h3 class="card-title text-lg font-semibold">Filter by Surah</h3>
+        <h3 class="card-title text-lg font-semibold text-neutral dark:text-neutral-content" class:arabic={$languageStore === 'ar'}>
+          {filterTitle}
+        </h3>
         
         <div class="form-control w-full">
           <label class="label" for="surah-select">
-            <span class="label-text">Select Surah</span>
+            <span class="label-text text-neutral dark:text-neutral-content" class:arabic={$languageStore === 'ar'}>
+              {selectLabel}
+            </span>
           </label>
           <div class="flex gap-2">
             <select 
               id="surah-select"
               class="select select-bordered flex-1" 
+              class:arabic={$languageStore === 'ar'}
               value={selectedSurah || ""}
               on:change={handleSurahChange}
+              dir={$languageStore === 'ar' ? 'rtl' : 'ltr'}
             >
-              <option value="">All Surahs</option>
+              <option value="" class:arabic={$languageStore === 'ar'}>
+                {allSurahs}
+              </option>
               {#each surahs as surah}
-                <option value={surah.number}>
-                  {surah.number}. {surah.name} ({surah.englishName})
+                <option value={surah.number} class:arabic={$languageStore === 'ar'}>
+                  {$languageStore === 'ar' 
+                    ? `${surah.name} - ${surah.number}` 
+                    : `${surah.number}. ${surah.name} (${surah.englishName})`}
                 </option>
               {/each}
             </select>
@@ -81,5 +134,10 @@
   .surah-filter {
     width: 100%;
     margin-bottom: 1rem;
+  }
+  
+  .rtl {
+    direction: rtl;
+    text-align: right;
   }
 </style>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import { appStore } from '../stores/appStore';
+  import { languageStore } from '../stores/languageStore';
   
   export let initialQuestion = '';
   export let isLoading = false;
@@ -36,26 +37,48 @@
       handleSubmit();
     }
   }
+  
+  // Get placeholder text based on language
+  $: placeholder = $languageStore === 'en' 
+    ? 'Enter your question about the Quran...'
+    : $languageStore === 'ar' 
+    ? 'أدخل سؤالك حول القرآن الكريم...'
+    : 'Ingrese su pregunta sobre el Corán...';
+  
+  // Get label text based on language
+  $: labelText = $languageStore === 'en' 
+    ? 'Ask about the Quran'
+    : $languageStore === 'ar' 
+    ? 'اسأل عن القرآن'
+    : 'Pregunte sobre el Corán';
 </script>
 
-<div class="question-input-container">
+<div class="question-input-container" class:rtl={$languageStore === 'ar'}>
   <form on:submit|preventDefault={handleSubmit} class="flex flex-col space-y-4">
     <div class="form-control">
       <label for="question" class="label">
-        <span class="label-text text-lg font-medium">Ask about the Quran</span>
+        <span class="label-text text-lg font-medium" class:arabic={$languageStore === 'ar'}>
+          {labelText}
+        </span>
       </label>
       <div class="relative">
         <textarea
           id="question"
           bind:value={question}
           on:keydown={handleKeydown}
-          placeholder="Enter your question about the Quran..."
-          class="textarea textarea-bordered w-full h-24 pr-12 resize-none"
+          placeholder={placeholder}
+          class="textarea textarea-bordered w-full h-24 resize-none"
+          class:arabic={$languageStore === 'ar'} 
+          class:pr-12={$languageStore !== 'ar'} 
+          class:pl-12={$languageStore === 'ar'}
           disabled={isLoading}
+          dir={$languageStore === 'ar' ? 'rtl' : 'ltr'}
         ></textarea>
         <button
           type="submit"
-          class="btn btn-primary absolute bottom-2 right-2"
+          class="btn btn-primary absolute bottom-2"
+          class:right-2={$languageStore !== 'ar'}
+          class:left-2={$languageStore === 'ar'}
           disabled={!question.trim() || isLoading}
         >
           {#if isLoading}
@@ -74,5 +97,14 @@
 <style>
   .question-input-container {
     width: 100%;
+  }
+  
+  .rtl {
+    direction: rtl;
+    text-align: right;
+  }
+  
+  :global(.arabic) {
+    font-family: 'Traditional Arabic', 'Scheherazade New', serif;
   }
 </style>
