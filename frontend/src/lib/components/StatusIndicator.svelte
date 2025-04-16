@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { languageStore } from '../stores/languageStore';
+  
   export let status: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   export let message: string = '';
   
@@ -15,33 +17,49 @@
     success: '✅',
     error: '❌'
   }[status];
+  
+  // Get default messages in the current language
+  function getDefaultMessage(status: string): string {
+    const messages = {
+      loading: {
+        en: 'Processing your request...',
+        ar: 'جاري معالجة طلبك...',
+        es: 'Procesando su solicitud...'
+      },
+      success: {
+        en: 'Request completed successfully',
+        ar: 'تم إكمال الطلب بنجاح',
+        es: 'Solicitud completada con éxito'
+      },
+      error: {
+        en: 'An error occurred',
+        ar: 'حدث خطأ',
+        es: 'Se produjo un error'
+      },
+      idle: {
+        en: '',
+        ar: '',
+        es: ''
+      }
+    };
+    
+    return messages[status as keyof typeof messages][$languageStore];
+  }
 </script>
 
 {#if status !== 'idle' || message}
-  <div class="status-indicator {statusClass} text-sm p-3 rounded-lg shadow-sm flex items-center gap-2 my-2">
+  <div class="status-indicator {statusClass} text-sm p-3 rounded-lg shadow-sm flex items-center gap-2 my-2"
+       class:rtl={$languageStore === 'ar'}>
     <span class="status-icon">{statusIcon}</span>
-    <span class="status-message">{message || getDefaultMessage(status)}</span>
+    <span class="status-message" class:arabic={$languageStore === 'ar'}>
+      {message || getDefaultMessage(status)}
+    </span>
     
     {#if status === 'loading'}
       <span class="loading loading-dots loading-sm ml-auto"></span>
     {/if}
   </div>
 {/if}
-
-<script context="module" lang="ts">
-  function getDefaultMessage(status: string): string {
-    switch (status) {
-      case 'loading':
-        return 'Processing your request...';
-      case 'success':
-        return 'Request completed successfully';
-      case 'error':
-        return 'An error occurred';
-      default:
-        return '';
-    }
-  }
-</script>
 
 <style>
   .status-indicator {
@@ -50,5 +68,10 @@
   
   .status-message {
     flex: 1;
+  }
+  
+  .rtl {
+    direction: rtl;
+    text-align: right;
   }
 </style>
