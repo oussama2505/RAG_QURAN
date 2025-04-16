@@ -1,7 +1,6 @@
 services:
   api:
     build: .
-    command: api
     ports:
       - "8000:8000"
     env_file:
@@ -17,17 +16,12 @@ services:
       timeout: 10s
       retries: 3
 
-  streamlit:
-    build: .
-    command: streamlit
+  frontend:
+    build: ./frontend
     ports:
-      - "8501:8501"
-    env_file:
-      - .env
+      - "5173:5173"
     volumes:
-      - ./data:/app/data
-      - ./vector_db:/app/vector_db
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - api

@@ -1,6 +1,6 @@
 # Quran Knowledge Explorer - RAG System
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 A Retrieval-Augmented Generation (RAG) system for exploring and understanding the Quran. This system combines the power of vector embeddings for semantic search with OpenAI's language models to provide accurate and contextually relevant answers about the Quran.
@@ -20,25 +20,28 @@ A Retrieval-Augmented Generation (RAG) system for exploring and understanding th
 
 ```
 RAG_QURAN/
-├── app/                  # Backend API
-│   └── api.py            # FastAPI implementation
+├── backend/              # Backend code
+│   ├── __init__.py       # Package initialization
+│   ├── api/              # API layer
+│   │   ├── __init__.py   # Package initialization 
+│   │   └── routes.py     # FastAPI implementation
+│   └── core/             # Core implementation
+│       ├── __init__.py   # Package initialization
+│       ├── api_key_manager.py # API key management
+│       ├── config.py     # Configuration settings
+│       ├── data_processing.py # Data loading and processing
+│       ├── direct_openai.py # Direct OpenAI API integration
+│       ├── embeddings.py # Vector embeddings implementation
+│       ├── generator.py  # Answer generation with LLM
+│       ├── llm_client.py # Unified LLM client implementation
+│       ├── main.py       # Main orchestration code
+│       └── retriever.py  # Retrieval components
 ├── frontend/             # Svelte frontend
 │   ├── src/              # Frontend source code
 │   └── public/           # Static assets
 ├── data/                 # Data directory
 │   ├── quran.json        # Quran text in JSON format
 │   └── tafsirs/          # Directory for tafsir JSON files
-├── src/                  # Core implementation
-│   ├── api_key_manager.py # API key management
-│   ├── config.py         # Configuration settings
-│   ├── data_processing.py# Data loading and processing
-│   ├── direct_openai.py  # Direct OpenAI API integration
-│   ├── embeddings.py     # Vector embeddings implementation
-│   ├── generator.py      # Answer generation with LLM
-│   ├── llm_client.py     # Unified LLM client implementation
-│   ├── main.py           # Main orchestration code
-│   ├── retriever.py      # Retrieval components
-│   └── utils.py          # Utility functions
 ├── vector_db/            # Vector database storage (created on first run)
 ├── .env                  # Environment variables
 ├── Dockerfile            # Docker container definition
@@ -109,7 +112,7 @@ The system expects Quran and tafsir data in a specific format. Prepare your data
    ```
 
 4. Access the services:
-   - Frontend UI: http://localhost:3000
+   - Frontend UI: http://localhost:5173
    - API Documentation: http://localhost:8000/docs
 
 ### Option 2: Local Installation
@@ -138,7 +141,7 @@ The system expects Quran and tafsir data in a specific format. Prepare your data
    - Start the API:
      ```bash
      cd path/to/RAG_QURAN
-     uvicorn app.api:app --reload
+     uvicorn backend.api.routes:app --reload
      ```
    - Start the Frontend:
      ```bash
@@ -150,7 +153,7 @@ The system expects Quran and tafsir data in a specific format. Prepare your data
 
 ### Using the Frontend
 
-1. Open http://localhost:3000 in your browser
+1. Open http://localhost:5173 in your browser
 2. Enter your question about the Quran in the search field
 3. Use the filters to narrow down your search by surah and verse
 4. Submit your query to receive a detailed response with relevant verses and explanations
@@ -210,7 +213,7 @@ Supported models include:
 
 The system provides multiple options for OpenAI integration:
 
-1. **Direct Integration** - Uses `direct_openai.py` to communicate directly with OpenAI API, bypassing LangChain.
+1. **Direct Integration** - Uses `backend.core.direct_openai` to communicate directly with OpenAI API, bypassing LangChain.
    - More reliable for some environments
    - Simpler error handling
    - Recommended for production use
@@ -247,6 +250,15 @@ Some ideas for extending this project:
 - [Chroma Vector Database](https://docs.trychroma.com/)
 
 ## Changelog
+
+### Version 1.2.0 (2025-04-17)
+
+- Refactored project structure for better organization
+  - Moved core implementation to `backend/core`
+  - Moved API implementation to `backend/api`
+  - Updated imports and configuration files
+- Updated Docker configuration to work with new structure
+- Updated documentation
 
 ### Version 1.0.0 (2025-04-10)
 
