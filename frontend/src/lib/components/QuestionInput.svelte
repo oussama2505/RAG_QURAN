@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { appStore } from '../stores/appStore';
   
   export let initialQuestion = '';
@@ -7,6 +7,17 @@
   
   let question = initialQuestion;
   const dispatch = createEventDispatcher();
+  
+  // Subscribe to question changes in the store
+  onMount(() => {
+    const unsubscribe = appStore.subscribe(state => {
+      if (state.question !== question) {
+        question = state.question;
+      }
+    });
+    
+    return unsubscribe;
+  });
   
   function handleSubmit() {
     if (!question.trim()) return;
