@@ -18,3 +18,4 @@ config.json
 copilot.json
 __pycache__/
 vector_db/
+.github/workflows/build.yml
