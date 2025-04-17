@@ -48,13 +48,15 @@
     author: "Quran 12:2"
   };
   
-  onMount(() => {
-    // Initialize any data if needed
-    const storedQuestion = $appStore.question;
-    if (storedQuestion) {
-      question = storedQuestion;
+  // Subscribe to appStore changes to keep question in sync
+  const unsubscribe = appStore.subscribe(state => {
+    if (state.question !== null && state.question !== undefined) {
+      question = state.question;
     }
-
+  });
+  
+  onMount(() => {
+    // Initialize theme
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || savedTheme === 'light') {
       document.documentElement.setAttribute('data-theme', savedTheme);
@@ -62,6 +64,9 @@
       document.documentElement.setAttribute('data-theme', 'dark');
       localStorage.setItem('theme', 'dark');
     }
+    
+    // Return unsubscribe function to clean up subscription
+    return unsubscribe;
   });
   
   // Handle question submission

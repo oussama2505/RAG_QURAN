@@ -21,7 +21,7 @@
   });
   
   function handleSubmit() {
-    if (!question.trim()) return;
+    if (!(question?.trim())) return;
     
     dispatch('submit', question);
     
@@ -79,7 +79,7 @@
           class="btn btn-primary absolute bottom-2"
           class:right-2={$languageStore !== 'ar'}
           class:left-2={$languageStore === 'ar'}
-          disabled={!question.trim() || isLoading}
+          disabled={!(question?.trim()) || isLoading}
         >
           {#if isLoading}
             <span class="loading loading-spinner loading-sm"></span>
