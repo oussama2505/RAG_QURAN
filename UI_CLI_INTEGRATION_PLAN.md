@@ -34,7 +34,7 @@ This document outlines the steps to implement a user interface (UI) and command-
 
 - [x] Create stores for managing search state
 - [x] Create stores for managing user preferences and settings
-- [ ] Implement caching for previously fetched results
+- [x] Implement caching for previously fetched results
 
 ## CLI Integration
 

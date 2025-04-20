@@ -1,10 +1,23 @@
 import { searchState } from '../stores/search';
 import { settings } from '../stores/settings';
+import { addToCache, getFromCache } from '../stores/cache';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export async function performSearch(query: string, filters: { surah?: number; verse?: number } = {}) {
     try {
+        // Check cache first
+        const cachedResult = getFromCache(query, filters);
+        if (cachedResult) {
+            searchState.update(state => ({
+                ...state,
+                loading: false,
+                results: cachedResult.results,
+                totalResults: cachedResult.results.length
+            }));
+            return;
+        }
+
         // Update search state to loading
         searchState.update(state => ({
             ...state,
@@ -35,6 +48,14 @@ export async function performSearch(query: string, filters: { surah?: number; ve
         }
 
         const data = await response.json();
+
+        // Cache the result
+        addToCache({
+            query,
+            filters,
+            results: data.results,
+            timestamp: Date.now()
+        });
 
         // Update search state with results
         searchState.update(state => ({
