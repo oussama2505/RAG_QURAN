@@ -65,9 +65,13 @@ def update_readme(version, readme_path):
         with open(readme_path, 'r') as file:
             content = file.read()
         
-        # Update version references in README
-        version_pattern = r'(version |v)(\d+\.\d+\.\d+)'
-        updated_content = re.sub(version_pattern, f'\\1{version}', content)
+        # Update version badge in README
+        version_pattern = r'version-(\d+\.\d+\.\d+)-blue'
+        updated_content = re.sub(version_pattern, f'version-{version}-blue', content)
+        
+        # Update any other version references
+        other_version_pattern = r'Version (\d+\.\d+\.\d+)'
+        updated_content = re.sub(other_version_pattern, f'Version {version}', updated_content)
         
         # Update "last updated" references if they exist
         date_pattern = r'Last updated: \d{4}-\d{2}-\d{2}'
