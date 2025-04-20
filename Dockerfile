@@ -1,31 +1,29 @@
-FROM python:3.10-slim
+FROM python:3.8-slim
 
 WORKDIR /app
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+	build-essential \
+	&& rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
+# Copy requirements and install Python dependencies
 COPY requirements.txt .
-
-# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy the application code
 COPY . .
 
-# Create necessary directories if they don't exist
-RUN mkdir -p data/tafsirs vector_db
+# Install the CLI tool
+RUN pip install -e .
 
-# Expose port for FastAPI
-EXPOSE 8000
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
 
-# Create entry point script
-RUN echo '#!/bin/sh\n\
-exec uvicorn backend.api.routes:app --host 0.0.0.0 --port 8000\n\
-' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+# Create a non-root user
+RUN useradd -m appuser
+USER appuser
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Set the entrypoint
+ENTRYPOINT ["quran-cli"]

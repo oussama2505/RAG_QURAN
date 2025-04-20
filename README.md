@@ -369,3 +369,128 @@ Some ideas for extending this project:
 ## License
 
 MIT
+
+## CLI Installation and Usage
+
+### Installation
+
+1. Install the CLI tool:
+
+```bash
+pip install -e .
+```
+
+This will install the `quran-cli` command globally.
+
+### Usage
+
+The CLI provides several commands for interacting with the Quran Knowledge Explorer:
+
+#### Search Command
+
+Search the Quran for specific topics or verses:
+
+```bash
+quran-cli search "What does the Quran say about patience?"
+```
+
+Filter by surah and verse:
+
+```bash
+quran-cli search "What does Surah Al-Baqarah say about fasting?" --surah 2
+```
+
+Specify output format (text, json, or markdown):
+
+```bash
+quran-cli search "What does the Quran say about patience?" --format json
+```
+
+#### Translation Command
+
+Get translations of specific verses:
+
+```bash
+quran-cli translate 1 1
+```
+
+Specify translation:
+
+```bash
+quran-cli translate 1 1 --translation en-sahih
+```
+
+#### Tafsir Command
+
+Get tafsir explanations:
+
+```bash
+quran-cli tafsir 1 1
+```
+
+Specify tafsir:
+
+```bash
+quran-cli tafsir 1 1 --tafsir ibn_kathir
+```
+
+#### Configuration
+
+Set up your API key and model preferences:
+
+```bash
+quran-cli config --api-key your_api_key --model gpt-4-turbo
+```
+
+### Help
+
+Get help for any command:
+
+```bash
+quran-cli --help
+quran-cli search --help
+quran-cli translate --help
+quran-cli tafsir --help
+quran-cli config --help
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **API Key Not Set**
+
+   - Error: "API key not configured"
+   - Solution: Run `quran-cli config --api-key your_api_key`
+
+2. **Invalid Model Name**
+
+   - Error: "Invalid model name"
+   - Solution: Use one of the supported models (e.g., gpt-4-turbo, gpt-3.5-turbo)
+
+3. **Network Issues**
+
+   - Error: "Failed to connect to API"
+   - Solution: Check your internet connection and API endpoint configuration
+
+4. **Invalid Surah/Verse Numbers**
+
+   - Error: "Invalid surah or verse number"
+   - Solution: Use valid surah numbers (1-114) and verse numbers within the surah's range
+
+5. **Configuration File Issues**
+   - Error: "Failed to read/write configuration"
+   - Solution: Check file permissions in `~/.quran-cli/config.json`
+
+### Getting Help
+
+If you encounter any issues not covered above:
+
+1. Check the error message for specific details
+2. Run the command with `--verbose` flag for more information
+3. Check the logs in `~/.quran-cli/logs/`
+4. Open an issue on GitHub with:
+   - The command you were trying to run
+   - The complete error message
+   - Your system information (OS, Python version)
+   - Steps to reproduce the issue
