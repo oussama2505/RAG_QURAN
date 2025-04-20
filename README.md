@@ -1,6 +1,6 @@
 # Quran Knowledge Explorer - RAG System
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 A Retrieval-Augmented Generation (RAG) system for exploring and understanding the Quran. This system combines the power of vector embeddings for semantic search with OpenAI's language models to provide accurate and contextually relevant answers about the Quran.
@@ -15,6 +15,8 @@ A Retrieval-Augmented Generation (RAG) system for exploring and understanding th
 - **Robust error handling** for OpenAI API integration
 - **Multiple fallback mechanisms** for reliable operation
 - **Direct and LangChain** implementations for flexibility
+- **A2A Integration**: Agent-to-agent communication using Google's A2A protocol
+- **MCP Support**: Model Context Protocol servers for standardized AI access
 
 ## Project Structure
 
@@ -23,8 +25,22 @@ RAG_QURAN/
 ├── backend/              # Backend code
 │   ├── __init__.py       # Package initialization
 │   ├── api/              # API layer
-│   │   ├── __init__.py   # Package initialization 
+│   │   ├── __init__.py   # Package initialization
 │   │   └── routes.py     # FastAPI implementation
+│   ├── agents/           # A2A agent implementations
+│   │   ├── base/         # Base agent interfaces
+│   │   ├── retriever/    # Retriever agent
+│   │   ├── generator/    # Generator agent
+│   │   ├── tools/        # Tool agents
+│   │   ├── orchestrator.py # A2A orchestration
+│   │   └── test_a2a.py   # A2A test script
+│   ├── mcp_servers/      # MCP server implementations
+│   │   ├── retriever/    # Retriever server
+│   │   ├── generator/    # Generator server
+│   │   ├── tafsir/       # Tafsir tool server
+│   │   ├── base_server.py # Base MCP server
+│   │   ├── run_servers.py # Server runner
+│   │   └── test_mcp.py   # MCP test script
 │   └── core/             # Core implementation
 │       ├── __init__.py   # Package initialization
 │       ├── api_key_manager.py # API key management
@@ -43,6 +59,9 @@ RAG_QURAN/
 │   ├── quran.json        # Quran text in JSON format
 │   └── tafsirs/          # Directory for tafsir JSON files
 ├── vector_db/            # Vector database storage (created on first run)
+├── A2A/                  # A2A protocol repository (cloned)
+├── INTEGRATION_GUIDE.md  # A2A/MCP integration guide
+├── INTEGRATION_PLAN.md   # A2A/MCP integration plan
 ├── .env                  # Environment variables
 ├── Dockerfile            # Docker container definition
 ├── docker-compose.yml    # Multi-container Docker setup
@@ -60,11 +79,13 @@ RAG_QURAN/
 The system expects Quran and tafsir data in a specific format. Prepare your data as follows:
 
 1. Create the data directory:
+
    ```bash
    mkdir -p data/tafsirs
    ```
 
 2. Add `quran.json` file in the `data` directory with this structure:
+
    ```json
    {
      "surahs": [
@@ -102,11 +123,13 @@ The system expects Quran and tafsir data in a specific format. Prepare your data
 1. Clone the repository or prepare the files as shown in the project structure.
 
 2. Set up your `.env` file with your OpenAI API key:
+
    ```
    OPENAI_API_KEY=your_openai_api_key_here
    ```
 
 3. Build and start the containers:
+
    ```bash
    docker-compose up -d
    ```
@@ -120,6 +143,7 @@ The system expects Quran and tafsir data in a specific format. Prepare your data
 1. Clone the repository or prepare the files as shown in the project structure.
 
 2. Backend Setup:
+
    ```bash
    python -m venv quran_env
    source quran_env/bin/activate  # On Windows: quran_env\Scripts\activate
@@ -127,12 +151,14 @@ The system expects Quran and tafsir data in a specific format. Prepare your data
    ```
 
 3. Frontend Setup:
+
    ```bash
    cd frontend
    npm install
    ```
 
 4. Set up your `.env` file with your OpenAI API key:
+
    ```
    OPENAI_API_KEY=your_openai_api_key_here
    ```
@@ -200,11 +226,13 @@ print(response.json())
 ### Changing the LLM Model
 
 You can change the OpenAI model by updating the `.env` file:
+
 ```
 LLM_MODEL_NAME=gpt-4-turbo
 ```
 
 Supported models include:
+
 - gpt-4-turbo
 - gpt-4
 - gpt-3.5-turbo
@@ -214,6 +242,7 @@ Supported models include:
 The system provides multiple options for OpenAI integration:
 
 1. **Direct Integration** - Uses `backend.core.direct_openai` to communicate directly with OpenAI API, bypassing LangChain.
+
    - More reliable for some environments
    - Simpler error handling
    - Recommended for production use
@@ -232,6 +261,55 @@ EMBEDDING_MODEL_TYPE=openai  # Uses OpenAI embeddings (default)
 EMBEDDING_MODEL_TYPE=huggingface  # Uses Hugging Face embeddings (local)
 ```
 
+### Using A2A and MCP Features
+
+#### Agent-to-Agent (A2A) Communication
+
+The system now supports agent-to-agent communication using Google's A2A protocol:
+
+```python
+from backend.agents.orchestrator import A2AOrchestrator, QuranQueryRequest
+
+# Create the orchestrator
+orchestrator = A2AOrchestrator()
+
+# Create a query request
+request = QuranQueryRequest(
+    query="What does the Quran say about patience?",
+    surah_filter=None,  # Optional surah filter
+    verse_filter=None   # Optional verse filter
+)
+
+# Process the query
+response = await orchestrator.process_query(request)
+
+# Access the response
+print(response.answer)          # The generated answer
+print(response.sources)         # The sources used
+print(response.filters_applied) # Filters that were applied
+```
+
+#### Model Context Protocol (MCP) Servers
+
+The system provides MCP servers for standardized AI access:
+
+1. Start the MCP servers:
+
+   ```bash
+   cd backend
+   python -m mcp_servers.run_servers
+   ```
+
+2. Access the servers via HTTP:
+
+   - Retriever server: http://localhost:5000
+   - Generator server: http://localhost:5001
+   - Tafsir server: http://localhost:5002
+
+3. Use with any MCP-compatible client, including Claude Desktop and other AI tools.
+
+For detailed usage examples and API documentation, refer to the `INTEGRATION_GUIDE.md` file.
+
 ## Further Development
 
 Some ideas for extending this project:
@@ -241,6 +319,9 @@ Some ideas for extending this project:
 3. Add more advanced filters (by topic, theme, etc.)
 4. Integrate additional tafsirs and scholarly sources
 5. Add parallel texts (Arabic + translations)
+6. Create additional A2A agents for specialized tasks
+7. Build a CLI interface for the A2A orchestrator
+8. Expose more MCP tools for external AI systems
 
 ## Resources for Learning More About RAG Systems
 
@@ -250,6 +331,20 @@ Some ideas for extending this project:
 - [Chroma Vector Database](https://docs.trychroma.com/)
 
 ## Changelog
+
+### Version 1.3.0 (2025-04-17)
+
+- Added Agent-to-Agent (A2A) communication capabilities
+  - Implemented modular agent architecture
+  - Created retriever, generator, and tool agents
+  - Added agent orchestration for seamless workflow
+- Added Model Context Protocol (MCP) integration
+  - Created MCP servers for each component
+  - Exposed standardized APIs for AI access
+  - Added testing and documentation
+- Updated project structure to accommodate new components
+- Added comprehensive integration guide
+- Added test scripts for A2A and MCP features
 
 ### Version 1.2.0 (2025-04-17)
 

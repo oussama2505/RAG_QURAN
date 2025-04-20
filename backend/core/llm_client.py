@@ -27,21 +27,18 @@ class OpenAIClient:
                 raise ValueError("OPENAI_API_KEY is not available")
             
             try:
-                # Create custom HTTP client with disabled proxies to avoid proxy issues
-                http_client = httpx.Client(proxies=None, transport=httpx.HTTPTransport(local_address="0.0.0.0"))
-                
-                # Initialize with custom HTTP client
-                cls._client = openai.OpenAI(api_key=api_key, http_client=http_client)
+                # Initialize with default client
+                cls._client = openai.OpenAI(api_key=api_key)
             except Exception as e:
-                print(f"Warning: Could not create custom OpenAI client: {e}")
-                print("Falling back to default client initialization")
+                print(f"Warning: Could not create OpenAI client: {e}")
+                print("Falling back to legacy client initialization")
                 try:
-                    # Try without custom HTTP client
-                    cls._client = openai.OpenAI(api_key=api_key)
-                except (AttributeError, TypeError):
                     # Fall back to legacy client for older versions
                     openai.api_key = api_key
                     cls._client = openai
+                except Exception as e2:
+                    print(f"Error in legacy client initialization: {e2}")
+                    raise
         return cls._instance
     
     @property

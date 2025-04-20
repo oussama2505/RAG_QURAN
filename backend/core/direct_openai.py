@@ -17,17 +17,15 @@ def get_openai_client():
         raise ValueError("OPENAI_API_KEY environment variable is required")
     
     try:
-        # Create custom HTTP client with disabled proxies to avoid proxy issues
-        http_client = httpx.Client(proxies=None, transport=httpx.HTTPTransport(local_address="0.0.0.0"))
-        
-        # Create client with the custom HTTP client
-        return openai.OpenAI(api_key=api_key, http_client=http_client)
+        # Initialize with default client
+        return openai.OpenAI(api_key=api_key)
     except Exception as e:
         # If the above fails (e.g., with older versions of the openai package),
-        # fall back to the default client
-        print(f"Warning: Could not create custom OpenAI client: {e}")
-        print("Falling back to default client initialization")
-        return openai.OpenAI(api_key=api_key)
+        # fall back to the legacy client
+        print(f"Warning: Could not create OpenAI client: {e}")
+        print("Falling back to legacy client initialization")
+        openai.api_key = api_key
+        return openai
 
 def generate_answer_with_openai(context, question, model="gpt-3.5-turbo"):
     """
