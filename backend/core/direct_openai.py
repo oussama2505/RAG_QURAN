@@ -18,7 +18,11 @@ def get_openai_client():
     
     try:
         # Initialize with default client
-        return openai.OpenAI(api_key=api_key)
+        return openai.OpenAI(
+            api_key=api_key,
+            timeout=30.0,  # Add timeout
+            max_retries=3  # Add retries
+        )
     except Exception as e:
         # If the above fails (e.g., with older versions of the openai package),
         # fall back to the legacy client

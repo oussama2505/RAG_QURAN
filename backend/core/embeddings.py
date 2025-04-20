@@ -36,7 +36,11 @@ class CustomOpenAIEmbeddings(Embeddings):
         # Initialize the client for OpenAI v1.0.0+
         try:
             from openai import OpenAI
-            self.client = OpenAI(api_key=api_key)
+            self.client = OpenAI(
+                api_key=api_key,
+                timeout=30.0,  # Add timeout
+                max_retries=3  # Add retries
+            )
             self.use_new_api = True
             print(f"Using OpenAI v1.0.0+ API with model {self.model}")
         except (ImportError, TypeError) as e:

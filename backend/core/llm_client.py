@@ -28,7 +28,11 @@ class OpenAIClient:
             
             try:
                 # Initialize with default client
-                cls._client = openai.OpenAI(api_key=api_key)
+                cls._client = openai.OpenAI(
+                    api_key=api_key,
+                    timeout=30.0,  # Add timeout
+                    max_retries=3  # Add retries
+                )
             except Exception as e:
                 print(f"Warning: Could not create OpenAI client: {e}")
                 print("Falling back to legacy client initialization")
