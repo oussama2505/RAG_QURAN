@@ -10,8 +10,8 @@ This document outlines the steps to implement a user interface (UI) and command-
 
 - [x] Create a new Svelte component for the advanced search interface
 - [x] Create a component for displaying search results with source attribution
-- [ ] Add a settings panel component for API configuration and model selection
-- [ ] Design a component for displaying translation and summarization options
+- [x] Add a settings panel component for API configuration and model selection
+- [x] Design a component for displaying translation and summarization options
 
 ### 2. API Integration
 
@@ -24,16 +24,16 @@ This document outlines the steps to implement a user interface (UI) and command-
 
 ### 3. User Interface Features
 
-- [ ] Implement an advanced search form with filters for surahs and verses
-- [ ] Add translation selector with available translations
-- [ ] Create a summarization control panel with length and focus options
-- [ ] Implement source display with highlighted references
-- [ ] Add tooltips for Quranic terms and concepts
+- [x] Implement an advanced search form with filters for surahs and verses
+- [x] Add translation selector with available translations
+- [x] Create a summarization control panel with length and focus options
+- [x] Implement source display with highlighted references
+- [x] Add tooltips for Quranic terms and concepts
 
 ### 4. State Management
 
-- [ ] Create stores for managing search state
-- [ ] Create stores for managing user preferences and settings
+- [x] Create stores for managing search state
+- [x] Create stores for managing user preferences and settings
 - [ ] Implement caching for previously fetched results
 
 ## CLI Integration
