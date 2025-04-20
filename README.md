@@ -1,6 +1,6 @@
 # Quran Knowledge Explorer - RAG System
 
-![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 A Retrieval-Augmented Generation (RAG) system for exploring and understanding the Quran. This system combines the power of vector embeddings for semantic search with OpenAI's language models to provide accurate and contextually relevant answers about the Quran.
@@ -332,7 +332,7 @@ Some ideas for extending this project:
 
 ## Changelog
 
-### Version 1.3.0 (2025-04-17)
+### Version 1.4.0 (2025-04-17)
 
 - Added Agent-to-Agent (A2A) communication capabilities
   - Implemented modular agent architecture
@@ -346,7 +346,7 @@ Some ideas for extending this project:
 - Added comprehensive integration guide
 - Added test scripts for A2A and MCP features
 
-### Version 1.2.0 (2025-04-17)
+### Version 1.4.0 (2025-04-17)
 
 - Refactored project structure for better organization
   - Moved core implementation to `backend/core`
@@ -355,7 +355,7 @@ Some ideas for extending this project:
 - Updated Docker configuration to work with new structure
 - Updated documentation
 
-### Version 1.0.0 (2025-04-10)
+### Version 1.4.0 (2025-04-10)
 
 - Initial release with core RAG functionality
 - Multiple implementation options for OpenAI integration:
